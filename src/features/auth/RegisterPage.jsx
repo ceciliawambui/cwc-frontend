@@ -1,3 +1,4 @@
+// RegisterPage.jsx
 import React from "react";
 import AuthLayout from "./AuthLayout";
 import AuthForm from "./AuthForm";
@@ -6,19 +7,14 @@ import { useNavigate } from "react-router-dom";
 export default function RegisterPage() {
   const nav = useNavigate();
   return (
-    
-    <AuthLayout title="Create Account" subtitle="Join the knowledge hub">
-        
+    <AuthLayout title="Join the Knowledge Hub">
       <AuthForm
         mode="register"
-        onSuccess={() => {
-          // after success, navigate to verify or login
-          setTimeout(() => nav("/login"), 800);
-        }}
+        onSuccess={() => setTimeout(() => nav("/login"), 800)}
       />
-      <p className="mt-4 text-sm text-gray-300 text-center">
+      <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
         Already have an account?{" "}
-        <a href="/login" className="text-indigo-300 hover:underline">
+        <a href="/login" className="text-indigo-500 hover:underline">
           Sign in
         </a>
       </p>

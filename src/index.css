@@ -1,55 +1,115 @@
-@import "tailwindcss";
-
-/* === Base styles === */
+/* === Base styles and utilities first === */
 @layer base {
   html {
-    @apply bg-gradient-to-br from-gray-50 to-gray-200 text-gray-900 transition-colors duration-700 ease-in-out;
+    @apply bg-gray-50 text-gray-900 transition-colors duration-700 ease-in-out;
   }
 
   html.dark {
-    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-950 text-gray-100;
+    @apply bg-[#0b0c10] text-white;
   }
 
   body {
-    @apply min-h-screen font-sans;
+    @apply min-h-screen font-sans antialiased;
     font-family: "Inter", system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold transition-colors duration-700;
+  /* === Headings === */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold transition-colors duration-700
+           text-gray-900 dark:text-gray-50;
   }
 
-  p, span, a, li {
-    @apply transition-colors duration-700;
+  /* === Paragraphs, spans, and list text === */
+  p:not([class]),
+  span:not([class]),
+  li:not([class]) {
+    @apply transition-colors duration-700 text-gray-700 dark:text-white;
+  }
+
+  /* === Links === */
+  a {
+    @apply text-indigo-600 hover:text-indigo-700 
+           dark:text-violet-400 dark:hover:text-pink-400 
+           transition-colors duration-700;
+  }
+
+  /* === Inputs, textarea, select === */
+  input,
+  textarea,
+  select {
+    @apply text-gray-900 dark:text-gray-100 
+           bg-white dark:bg-gray-800/80 
+           border border-gray-200 dark:border-gray-700 
+           placeholder-gray-400 dark:placeholder-gray-500 
+           focus:outline-none focus:ring-2 focus:ring-violet-500/60 
+           rounded-lg transition-colors duration-500;
+  }
+
+  /* === Labels === */
+  label {
+    @apply text-gray-800 dark:text-gray-300 transition-colors duration-500;
   }
 }
 
-/* === Reusable Utilities === */
+/* === Custom utilities === */
 @layer utilities {
-  /* Gradients usable anywhere */
-  .bg-gradient-light {
-    background: linear-gradient(to bottom right, #f9fafb, #e5e7eb);
-  }
-
-  .dark .bg-gradient-dark {
-    background: linear-gradient(to bottom right, #0f172a, #1e293b);
-  }
-
-  /* Glassmorphism */
+  /* ✨ Glass effect card */
   .glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.3);
+    /* backdrop-filter: blur(16px); */
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
-    transition: background 0.4s, border 0.4s;
-  }
-  .dark .glass-effect {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transition: background 0.4s, border 0.4s, box-shadow 0.3s, color 0.3s;
   }
 
-  /* Animations */
+  /* 🌑 Dark mode glass card */
+  .dark .glass-effect {
+    background: rgba(31, 41, 55, 0.85);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 45px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ✴️ Ensure readable text in dark glass */
+  .glass-effect * {
+    color: inherit !important;
+  }
+
+  .dark .glass-effect * {
+    color: rgb(255, 255, 255) !important;
+  }
+
+  /* ✨ Text glow for dark mode visibility */
+  .text-glow {
+    text-shadow: none;
+  }
+
+  .dark .text-glow {
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.35);
+  }
+
+  /* 🔥 Force white text utility */
+  .text-white-force {
+    color: #ffffff !important;
+    text-shadow: none !important;
+  }
+
+  .dark .text-white-force {
+    color: #ffffff !important;
+    text-shadow: none !important;
+  }
+
+  /* 🌈 Gradient text utility */
+  .gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500;
+  }
+
+  /* 🎞️ Floating + Fade animations */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -61,22 +121,47 @@
 
 /* === Keyframes === */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
-/* === Scrollbar === */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Scrollbar styling === */
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(99, 102, 241, 0.3);
+  background-color: rgba(139, 92, 246, 0.25);
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(99, 102, 241, 0.6);
+  background-color: rgba(236, 72, 153, 0.45);
 }
+.gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15; /* prevents clipping */
+  padding-bottom: 0.15em; /* ensures descenders visible */
+}
+
+
+/* 🧩 Tailwind inclusion — placed LAST for correct order */
+@import "tailwindcss";
