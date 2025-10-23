@@ -1,4 +1,3 @@
-// RegisterPage.jsx
 import React from "react";
 import AuthLayout from "./AuthLayout";
 import AuthForm from "./AuthForm";

@@ -1,4 +1,3 @@
-// // LoginPage.jsx
 // import React from "react";
 // import AuthLayout from "./AuthLayout";
 // import AuthForm from "./AuthForm";
@@ -9,13 +8,32 @@
 //   const nav = useNavigate();
 //   const { user } = useAuth();
 
-//   if (user && user.role === "admin") nav("/admin");
+//   React.useEffect(() => {
+//     if (!user) return; 
+
+//     if (user.is_admin || user.role === "admin") {
+//       nav("/admin");
+//     } else {
+//       nav("/");
+//     }
+//   }, [user, nav]);
+
+//   console.log(JSON.parse(localStorage.getItem("user")));
+
 
 //   return (
 //     <AuthLayout title="Sign in to Your Account">
 //       <AuthForm
 //         mode="login"
-//         onSuccess={() => setTimeout(() => nav("/admin"), 400)}
+//         onSuccess={(userData) =>
+//           setTimeout(() => {
+//             if (userData.role === "admin" || userData.is_admin) {
+//               nav("/admin");
+//             } else {
+//               nav("/");
+//             }
+//           }, 400)
+//         }
 //       />
 //       <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
 //         New here?{" "}
@@ -27,7 +45,7 @@
 //   );
 // }
 
-import React from "react";
+import React, { useEffect } from "react";
 import AuthLayout from "./AuthLayout";
 import AuthForm from "./AuthForm";
 import { useNavigate } from "react-router-dom";
@@ -37,17 +55,8 @@ export default function LoginPage() {
   const nav = useNavigate();
   const { user } = useAuth();
 
-  // React.useEffect(() => {
-  //   if (user) {
-  //     if (user.role === "admin" || user.is_admin) {
-  //       nav("/admin");
-  //     } else {
-  //       nav("/");
-  //     }
-  //   }
-  // }, [user, nav]);
-  React.useEffect(() => {
-    if (!user) return; // exit if undefined
+  useEffect(() => {
+    if (!user) return;
 
     if (user.is_admin || user.role === "admin") {
       nav("/admin");
@@ -56,16 +65,13 @@ export default function LoginPage() {
     }
   }, [user, nav]);
 
-  console.log(JSON.parse(localStorage.getItem("user")));
-
-
   return (
     <AuthLayout title="Sign in to Your Account">
       <AuthForm
         mode="login"
         onSuccess={(userData) =>
           setTimeout(() => {
-            if (userData.role === "admin" || userData.is_admin) {
+            if (userData.is_admin || userData.role === "admin") {
               nav("/admin");
             } else {
               nav("/");
@@ -82,4 +88,3 @@ export default function LoginPage() {
     </AuthLayout>
   );
 }
-

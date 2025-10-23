@@ -11,30 +11,20 @@ export default function AuthLayout({ title, subtitle, children }) {
       className="min-h-screen flex items-center justify-center relative overflow-hidden
                  transition-colors duration-700 ease-in-out"
     >
-      {/* === Floating background animation === */}
       <AnimatedBackground />
 
-      {/* === Theme Toggle (global) === */}
       <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
-      {/* === Main container === */}
       <div className="container mx-auto px-6 z-10">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20">
-          {/* === Left: Hero section === */}
           <motion.div
             initial={{ opacity: 0, y: -25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="flex-1 text-center lg:text-left"
           >
-            {/* <h1
-              className="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r  mb-4
-                         from-indigo-500 via-purple-500 to-pink-500 text-transparent bg-clip-text"
-            >
-              Knowledge Hub
-            </h1> */}
             <h1 className="text-5xl sm:text-6xl font-extrabold gradient-text mb-4">
               Knowledge Hub
             </h1>
@@ -46,9 +36,6 @@ export default function AuthLayout({ title, subtitle, children }) {
                 "Explore structured tutorials, notes, and visual examples across modern technologies."}
             </p>
 
-
-
-            {/* === Animated topic badges === */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -75,7 +62,6 @@ export default function AuthLayout({ title, subtitle, children }) {
 
           </motion.div>
 
-          {/* === Right: Auth Card === */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
