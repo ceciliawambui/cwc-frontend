@@ -39,6 +39,7 @@ import {
   Legend,
 } from "recharts";
 import { LineChart as LineChartIcon } from "lucide-react";
+import AdminTopics from "./AdminTopics";
 
 
 
@@ -52,11 +53,11 @@ export default function AdminDashboard() {
   const navLinks = [
     { name: "Dashboard", icon: <Home className="w-5 h-5" /> },
     { name: "Languages", icon: <BookOpen className="w-5 h-5" /> },
-    { name: "Topics", icon: <Layers className="w-5 h-5" /> },
     { name: "AI Tools", icon: <Bot className="w-5 h-5" /> },
     { name: "Users", icon: <Users className="w-5 h-5" /> },
     { name: "Settings", icon: <Settings className="w-5 h-5" /> },
     { name: "Courses", icon: <BookOpen className="w-5 h-5" /> },
+    { name: "Topics", icon: <Layers className="w-5 h-5" /> },
 
   ];
 
@@ -92,6 +93,7 @@ export default function AdminDashboard() {
           {activeSection === "Users" && <UserManagement users={users} />}
           {activeSection === "Settings" && <SettingsPanel />}
           {activeSection === "Courses" && <AdminCourses />}
+          {activeSection === "Topics" && <AdminTopics />} 
         </main>
       </div>
     </div>

@@ -7,6 +7,8 @@ import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
 import LandingPage from "./features/content/LandingPage";
 import AdminDashboard from "./features/admin/AdminDashboard"; 
+import CourseDetail from "./features/content/courses/CourseDetail";
+import TopicDetail from "./features/content/courses/TopicDetail";
 
 
 function PrivateAdmin({ children }) {
@@ -24,6 +26,8 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/topic/:slug" element={<TopicDetail />} />
           <Route
             path="/admin"
             element={
