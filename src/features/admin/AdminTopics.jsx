@@ -1,503 +1,427 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search,
+  Plus,
   Edit3,
   Trash2,
-  Loader2,
-  Plus,
   X,
-  Link as LinkIcon,
+  Loader2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
   Code,
+  Bold,
+  Italic,
+  QuoteIcon,
+  Underline,
+  List as ListIcon,
+  ListOrdered as ListOrderedIcon,
+  Youtube as YoutubeIcon,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
-import useAuth from "../../hooks/useAuth";
-import client from "../../features/auth/api";
+import toast from "react-hot-toast";
+import client from "../../features/auth/api"; // axios with token
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Heading from "@tiptap/extension-heading";
+import UnderlineExt from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import BulletList from "@tiptap/extension-bullet-list";
+import OrderedList from "@tiptap/extension-ordered-list";
+import Blockquote from "@tiptap/extension-blockquote";
+import Image from "@tiptap/extension-image";
+import Youtube from "@tiptap/extension-youtube";
+import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { lowlight } from "lowlight/lib/common.js";
+import js from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
+import cssLang from "highlight.js/lib/languages/css";
+import "highlight.js/styles/github.css";
+
+lowlight.registerLanguage("javascript", js);
+lowlight.registerLanguage("js", js);
+lowlight.registerLanguage("html", xml);
+lowlight.registerLanguage("xml", xml);
+lowlight.registerLanguage("css", cssLang);
+
+const PAGE_SIZE = 8;
+
+function extractTextFromTiptapJSON(node) {
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(extractTextFromTiptapJSON).join(" ");
+  if (node.type === "text") return node.text || "";
+  return node.content ? node.content.map(extractTextFromTiptapJSON).join(" ") : "";
+}
 
 export default function AdminTopics() {
-  const { user } = useAuth();
   const [topics, setTopics] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [filteredTopics, setFilteredTopics] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [courseFilter, setCourseFilter] = useState("");
+  const [page, setPage] = useState(1);
+
   const [showModal, setShowModal] = useState(false);
   const [editingTopic, setEditingTopic] = useState(null);
-  const [showPreview, setShowPreview] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
 
-  const emptyForm = {
+  const [meta, setMeta] = useState({
     title: "",
     description: "",
-    course: "",
     video_url: "",
-    content: [], // { type: "h2" | "p" | "code", text?, language?, code?, explanation?, sandbox? }
-  };
-  const [form, setForm] = useState(emptyForm);
+    course: "",
+    content: { type: "doc", content: [] },
+  });
 
-  useEffect(() => {
-    fetchCourses();
-    fetchTopics();
-  }, []);
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ codeBlock: false }),
+      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+      UnderlineExt,
+      Link.configure({ openOnClick: true }),
+      BulletList,
+      OrderedList,
+      Blockquote,
+      Image,
+      Youtube.configure({ width: 640, height: 360 }),
+      CodeBlockLowlight.configure({ lowlight }),
+      Placeholder.configure({ placeholder: "Write content here — headings, paragraphs, code..." }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+    ],
+    content: meta.content,
+    editorProps: {
+      attributes: {
+        class: "prose max-w-none text-gray-800 bg-white min-h-[220px] p-4 rounded border border-gray-200",
+      },
+    },
+    onUpdate: ({ editor }) => setMeta((m) => ({ ...m, content: editor.getJSON() })),
+  });
 
-  async function fetchCourses() {
+  // Fetch topics
+  const fetchTopics = async () => {
+    setLoading(true);
     try {
-      const res = await client.get("/api/courses/");
-      setCourses(res.data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load courses.");
-    }
-  }
-
-  async function fetchTopics() {
-    try {
-      setLoading(true);
       const res = await client.get("/api/topics/");
-      setTopics(res.data);
-      setFilteredTopics(res.data);
+      setTopics(res.data || []);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load topics.");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  function handleSearch(e) {
-    const value = e.target.value.toLowerCase();
-    setSearch(value);
-    setFilteredTopics(
-      topics.filter(
-        (t) =>
-          t.title.toLowerCase().includes(value) ||
-          t.description.toLowerCase().includes(value)
-      )
-    );
-  }
-
-  function handleOpenModal(topic = null) {
-    if (topic) {
-      setEditingTopic(topic);
-      setForm({
-        title: topic.title,
-        description: topic.description,
-        course: topic.course?.id || "",
-        video_url: topic.video_url || "",
-        content: topic.content || [],
-      });
-    } else {
-      setEditingTopic(null);
-      setForm(emptyForm);
+  const fetchCourses = async () => {
+    try {
+      const res = await client.get("/api/courses/");
+      setCourses(res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load courses.");
     }
-    setShowPreview(true);
-    setShowModal(true);
-  }
+  };
 
-  async function handleSubmit(e) {
+  useEffect(() => {
+    fetchTopics();
+    fetchCourses();
+  }, []);
+
+  const filtered = useMemo(() => {
+    let out = [...topics];
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      out = out.filter((t) => {
+        const title = (t.title || "").toLowerCase();
+        const desc = (t.description || "").toLowerCase();
+        const courseTitle = (t.course?.title || "").toLowerCase();
+        const contentText = t.content ? extractTextFromTiptapJSON(t.content) : "";
+        return title.includes(q) || desc.includes(q) || courseTitle.includes(q) || contentText.toLowerCase().includes(q);
+      });
+    }
+    if (courseFilter) {
+      out = out.filter((t) => String(t.course?.id) === String(courseFilter));
+    }
+    return out;
+  }, [topics, searchQuery, courseFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useEffect(() => setPage(1), [searchQuery, courseFilter]);
+
+  const openAddModal = () => {
+    setEditingTopic(null);
+    setMeta({ title: "", description: "", video_url: "", course: "", content: { type: "doc", content: [] } });
+    editor?.commands.clearContent();
+    setShowModal(true);
+  };
+
+  const openEditModal = (topic) => {
+    setEditingTopic(topic);
+    setMeta({
+      title: topic.title || "",
+      description: topic.description || "",
+      video_url: topic.video_url || "",
+      course: topic.course?.id ? String(topic.course.id) : "",
+      content: topic.content || { type: "doc", content: [] },
+    });
+    setTimeout(() => topic.content && editor?.commands.setContent(topic.content), 50);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingTopic(null);
+    editor?.commands.clearContent();
+    setMeta((m) => ({ ...m, content: { type: "doc", content: [] } }));
+  };
+
+  const handleMetaChange = (e) => {
+    const { name, value } = e.target;
+    setMeta((m) => ({ ...m, [name]: value }));
+  };
+
+  const insertCodeBlockWithLanguage = () => {
+    const lang = window.prompt("Enter language (e.g., javascript, html, css)");
+    editor?.chain().focus().insertContent({
+      type: "codeBlock",
+      attrs: lang ? { language: lang } : {},
+      content: [{ type: "text", text: "// write code here" }],
+    }).run();
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.course) {
-      toast.error("Please select a course.");
+    if (!meta.title.trim() || !meta.course) {
+      toast.error("Title and Course are required.");
       return;
     }
+    setSaving(true);
 
     const payload = {
-      title: form.title,
-      description: form.description,
-      course: parseInt(form.course),
-      video_url: form.video_url || null,
-      content: form.content.map((block) => ({
-        type: block.type,
-        text: block.text || "",
-        code: block.code || "",
-        language: block.language || "",
-        explanation: block.explanation || "",
-        sandbox: block.sandbox || false,
-      })),
+      title: meta.title,
+      description: meta.description || "",
+      video_url: meta.video_url || null,
+      course: parseInt(meta.course, 10),
+      content: meta.content,
     };
 
     try {
       if (editingTopic) {
         await client.put(`/api/topics/${editingTopic.id}/`, payload);
-        toast.success("Topic updated successfully.");
+        toast.success("Topic updated.");
       } else {
-        await client.post("/api/topics/", payload);
-        toast.success("Topic created successfully.");
+        await client.post(`/api/topics/`, payload);
+        toast.success("Topic created.");
       }
-      setShowModal(false);
-      fetchTopics();
-    } catch (err) {
-      console.error(err.response?.data || err);
-      toast.error("Failed to save topic.");
-    }
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm("Are you sure you want to delete this topic?")) return;
-    try {
-      await client.delete(`/api/topics/${id}/`);
-      toast.success("Topic deleted successfully.");
-      fetchTopics();
+      closeModal();
+      await fetchTopics();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete topic.");
+      const msg =
+        err.response?.data?.detail ||
+        JSON.stringify(err.response?.data) ||
+        "Failed to save. Make sure you have admin permissions.";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
     }
-  }
+  };
 
-  function addContentBlock(type) {
-    setForm((prev) => ({
-      ...prev,
-      content: [...prev.content, { type, sandbox: type === "code" ? true : false }],
-    }));
-  }
+  const promptDelete = (t) => {
+    setToDelete(t);
+    setShowDeleteConfirm(true);
+  };
 
-  function updateContentBlock(index, field, value) {
-    const newContent = [...form.content];
-    newContent[index][field] = value;
-    setForm((prev) => ({ ...prev, content: newContent }));
-  }
+  const confirmDelete = async () => {
+    if (!toDelete) return;
+    try {
+      await client.delete(`/api/topics/${toDelete.id}/`);
+      toast.success("Topic deleted.");
+      setShowDeleteConfirm(false);
+      setToDelete(null);
+      await fetchTopics();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete. Check permissions.");
+    }
+  };
 
-  if (!user || !(user.is_admin || user.role === "admin")) {
-    return (
-      <div className="text-center text-gray-600 p-10">
-        You must be an admin to access this page.
-      </div>
-    );
-  }
+  const previewFromContent = (content) => {
+    if (!content) return "";
+    if (typeof content === "string") return content;
+    const txt = extractTextFromTiptapJSON(content);
+    return txt.length > 240 ? txt.slice(0, 240) + "…" : txt;
+  };
 
   return (
-    <motion.div
-      className="p-6 rounded-2xl bg-white/80 dark:bg-gray-800/50 shadow-md backdrop-blur-xl border border-gray-200 dark:border-gray-700"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          Manage Topics
-        </h2>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md text-sm transition-all"
-        >
-          <Plus size={16} /> Add Topic
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={handleSearch}
-          placeholder="Search topics..."
-          className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-        />
-      </div>
-
-      {/* Topics Table */}
-      {loading ? (
-        <p className="text-center text-gray-500">
-          <Loader2 className="animate-spin inline-block mr-2" /> Loading topics...
-        </p>
-      ) : filteredTopics.length === 0 ? (
-        <p className="text-center text-gray-500">No topics found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="border-b border-gray-300 text-gray-700">
-              <tr>
-                <th className="py-3 px-2">Title</th>
-                <th>Description</th>
-                <th>Video</th>
-                <th>Course</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTopics.map((topic, i) => (
-                <motion.tr
-                  key={topic.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors"
-                >
-                  <td className="py-3 px-2 font-medium text-gray-900">{topic.title}</td>
-                  <td className="max-w-xs truncate text-gray-700">{topic.description}</td>
-                  <td className="text-indigo-500 truncate max-w-[180px]">
-                    {topic.video_url ? (
-                      <a
-                        href={topic.video_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1 hover:underline"
-                      >
-                        <LinkIcon size={14} /> YouTube
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="text-gray-600">{topic.course?.title || "—"}</td>
-                  <td className="text-right space-x-3">
-                    <button
-                      onClick={() => handleOpenModal(topic)}
-                      className="text-indigo-500 hover:text-indigo-700"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(topic.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="p-6 bg-white min-h-screen text-gray-800">
+      {/* Header + Search + Filter + New */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Manage Topics</h1>
+          <p className="text-sm text-gray-600 mt-1">Add, edit and organize topics with headings, paragraphs, code, and videos.</p>
         </div>
-      )}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2 gap-2 w-full md:w-[360px]">
+            <Search className="text-gray-400" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search topics..."
+              className="w-full bg-transparent outline-none text-sm text-gray-700"
+            />
+          </div>
+          <select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            className="bg-white border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700"
+          >
+            <option value="">All courses</option>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <button onClick={openAddModal} className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-md">
+            <Plus size={16} /> New
+          </button>
+        </div>
+      </div>
 
-      {/* Modal */}
+      {/* Table */}
+      <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600">Title</th>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600">Course</th>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600 hidden md:table-cell">Description</th>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600">Preview</th>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600">Created</th>
+              <th className="px-4 py-3 text-sm font-medium text-gray-600 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</td></tr>
+            ) : paginated.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No topics found.</td></tr>
+            ) : paginated.map((t) => (
+              <tr key={t.id} className="border-t">
+                <td className="px-4 py-3 align-top font-medium">{t.title}</td>
+                <td className="px-4 py-3 align-top">{t.course?.title || "-"}</td>
+                <td className="px-4 py-3 align-top hidden md:table-cell">{t.description || "—"}</td>
+                <td className="px-4 py-3 align-top text-sm">{previewFromContent(t.content)}</td>
+                <td className="px-4 py-3 align-top text-sm">{t.created_at ? new Date(t.created_at).toLocaleDateString() : "—"}</td>
+                <td className="px-4 py-3 align-top text-right">
+                  <div className="inline-flex items-center gap-2">
+                    <button onClick={() => openEditModal(t)} className="px-3 py-1 rounded-md bg-white border text-indigo-600 hover:bg-indigo-50" title="Edit"><Edit3 size={14} /></button>
+                    <button onClick={() => promptDelete(t)} className="px-3 py-1 rounded-md bg-white border text-red-600 hover:bg-red-50" title="Delete"><Trash2 size={14} /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Showing {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} topics
+        </div>
+        <div className="inline-flex items-center gap-2">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 border rounded bg-white disabled:opacity-40"><ChevronLeft size={16} /></button>
+          <div className="px-3 py-1 border rounded bg-white text-sm">{page} / {totalPages}</div>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 border rounded bg-white disabled:opacity-40"><ChevronRight size={16} /></button>
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm p-4 flex justify-center items-start overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-7xl min-h-[90vh] bg-white rounded-2xl shadow-xl border border-gray-300 flex flex-col overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex justify-between items-center p-6 border-b border-gray-300">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingTopic ? "Edit Topic / Detail View" : "Add New Topic"}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div className="absolute inset-0 bg-black/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} />
+            <motion.div initial={{ y: 20, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 10, opacity: 0, scale: 0.98 }} className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-gray-200">
+              <div className="flex items-center justify-between px-5 py-4 border-b">
+                <h2 className="text-lg font-semibold">{editingTopic ? "Edit Topic" : "Add Topic"}</h2>
+                <button onClick={closeModal} className="text-gray-600 hover:text-gray-900 p-2"><X size={18} /></button>
               </div>
-
-              {/* Body */}
-              <div className="flex flex-col lg:flex-row gap-6 p-6 flex-1 overflow-hidden">
-                {/* Form */}
-                <form
-                  onSubmit={handleSubmit}
-                  className="flex-1 space-y-4 overflow-y-auto"
-                >
-                  {/* Title */}
+              <form onSubmit={handleSave} className="p-5 space-y-4">
+                {/* Title / Course */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    />
+                    <label className="block text-sm text-gray-700 mb-1">Title *</label>
+                    <input name="title" value={meta.title} onChange={handleMetaChange} className="w-full border px-3 py-2 rounded" placeholder="Topic title" required />
                   </div>
-
-                  {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900">
-                      Description
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Video URL */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900">
-                      Video URL (Optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={form.video_url}
-                      onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                      placeholder="https://youtube.com/..."
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Course */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900">
-                      Select Course
-                    </label>
-                    <select
-                      required
-                      value={form.course}
-                      onChange={(e) => setForm({ ...form, course: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    >
-                      <option value="">Select course...</option>
-                      {courses.map((course) => (
-                        <option key={course.id} value={course.id}>
-                          {course.title}
-                        </option>
-                      ))}
+                    <label className="block text-sm text-gray-700 mb-1">Course *</label>
+                    <select name="course" value={meta.course} onChange={handleMetaChange} className="w-full border px-3 py-2 rounded" required>
+                      <option value="">-- choose course --</option>
+                      {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
                     </select>
                   </div>
+                </div>
 
-                  {/* Content Blocks Editor */}
-                  <div className="mt-4 border-t border-gray-300 pt-4 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-gray-900 font-medium mb-2">Content Blocks</h4>
-                      <button
-                        type="button"
-                        className="text-sm text-indigo-500 hover:text-indigo-700"
-                        onClick={() => setShowPreview(!showPreview)}
-                      >
-                        {showPreview ? "Hide Preview" : "Show Preview"}
-                      </button>
-                    </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Description</label>
+                  <textarea name="description" value={meta.description} onChange={handleMetaChange} rows={2} className="w-full border px-3 py-2 rounded" placeholder="Optional description" />
+                </div>
 
-                    <div className="flex gap-2 mb-2">
-                      <button
-                        type="button"
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm"
-                        onClick={() => addContentBlock("h2")}
-                      >
-                        Add Heading
-                      </button>
-                      <button
-                        type="button"
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm"
-                        onClick={() => addContentBlock("p")}
-                      >
-                        Add Paragraph
-                      </button>
-                      <button
-                        type="button"
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm"
-                        onClick={() => addContentBlock("code")}
-                      >
-                        <Code size={14} /> Add Code
-                      </button>
-                    </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">YouTube URL</label>
+                  <input name="video_url" value={meta.video_url} onChange={handleMetaChange} className="w-full border px-3 py-2 rounded" placeholder="https://youtu.be/..." />
+                </div>
 
-                    {form.content.map((block, idx) => (
-                      <div key={idx} className="mb-3 border p-3 rounded bg-gray-100">
-                        {block.type === "h2" && (
-                          <>
-                            <label className="block text-sm font-medium mb-1 text-gray-900">
-                              Heading
-                            </label>
-                            <input
-                              type="text"
-                              value={block.text || ""}
-                              onChange={(e) => updateContentBlock(idx, "text", e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                          </>
-                        )}
-                        {block.type === "p" && (
-                          <>
-                            <label className="block text-sm font-medium mb-1 text-gray-900">
-                              Paragraph
-                            </label>
-                            <textarea
-                              rows="3"
-                              value={block.text || ""}
-                              onChange={(e) => updateContentBlock(idx, "text", e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                          </>
-                        )}
-                        {block.type === "code" && (
-                          <>
-                            <label className="block text-sm font-medium mb-1 text-gray-900">
-                              Code
-                            </label>
-                            <textarea
-                              rows="4"
-                              value={block.code || ""}
-                              onChange={(e) => updateContentBlock(idx, "code", e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                            <label className="block text-sm font-medium mt-1 mb-1 text-gray-900">
-                              Language
-                            </label>
-                            <input
-                              type="text"
-                              value={block.language || "js"}
-                              onChange={(e) => updateContentBlock(idx, "language", e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                            <label className="block text-sm font-medium mt-1 mb-1 text-gray-900">
-                              Explanation
-                            </label>
-                            <textarea
-                              rows="2"
-                              value={block.explanation || ""}
-                              onChange={(e) => updateContentBlock(idx, "explanation", e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                {/* Editor Toolbar */}
+                <div className="flex flex-wrap items-center gap-2 bg-gray-50 border rounded px-2 py-2">
+                  <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className="px-2 py-1 border rounded text-sm bg-white">H1</button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className="px-2 py-1 border rounded text-sm bg-white">H2</button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className="px-2 py-1 border rounded text-sm bg-white"><Bold size={14} /></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className="px-2 py-1 border rounded text-sm bg-white"><Italic size={14} /></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className="px-2 py-1 border rounded text-sm bg-white"><Underline size={14} /></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className="px-2 py-1 border rounded text-sm bg-white"><ListIcon size={14} /></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className="px-2 py-1 border rounded text-sm bg-white"><ListOrderedIcon size={14} /></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className="px-2 py-1 border rounded text-sm bg-white"><QuoteIcon size={14} /></button>
+                  <button type="button" onClick={insertCodeBlockWithLanguage} className="px-2 py-1 border rounded text-sm bg-white"><Code size={14} /></button>
+                  <button type="button" onClick={() => { const url = window.prompt("YouTube URL"); if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run(); }} className="px-2 py-1 border rounded text-sm bg-white"><YoutubeIcon size={14} /></button>
+                </div>
 
-                  {/* Submit */}
-                  <button
-                    type="submit"
-                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-lg font-medium mt-4"
-                  >
-                    {editingTopic ? "Update Topic" : "Create Topic"}
-                  </button>
-                </form>
+                <div className="border border-gray-200 rounded"><EditorContent editor={editor} /></div>
 
-                {/* Live Preview */}
-                {showPreview && (
-                  <div className="flex-1 p-4 rounded-lg bg-gray-50 overflow-y-auto">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Live Preview</h3>
-                    <div className="space-y-3">
-                      {form.content.map((block, idx) => {
-                        if (block.type === "h2")
-                          return (
-                            <h2 key={idx} className="text-xl font-bold text-gray-900">{block.text}</h2>
-                          );
-                        if (block.type === "p")
-                          return <p key={idx} className="text-gray-900">{block.text}</p>;
-                        if (block.type === "code")
-                          return (
-                            <div key={idx} className="bg-gray-200 p-2 rounded font-mono text-sm overflow-x-auto">
-                              <pre>{block.code}</pre>
-                              {block.explanation && <p className="text-gray-700 mt-1">{block.explanation}</p>}
-                              {block.sandbox && block.language === "html" && (
-                                <iframe
-                                  srcDoc={block.code}
-                                  className="w-full h-48 border mt-2 rounded"
-                                  title="sandbox"
-                                />
-                              )}
-                            </div>
-                          );
-                        return null;
-                      })}
-                    </div>
-                  </div>
-                )}
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={closeModal} className="px-4 py-2 border rounded bg-white text-gray-700">Cancel</button>
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded bg-indigo-600 text-white">{saving ? "Saving..." : editingTopic ? "Update" : "Create"}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div className="absolute inset-0 bg-black/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteConfirm(false)} />
+            <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }} className="relative w-full max-w-md bg-white rounded shadow-lg border p-5">
+              <h3 className="text-lg font-semibold">Confirm delete</h3>
+              <p className="text-sm text-gray-600 mt-2">Are you sure you want to delete <strong>{toDelete?.title}</strong>?</p>
+              <div className="mt-4 flex justify-end gap-3">
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1 border rounded">Cancel</button>
+                <button onClick={confirmDelete} className="px-3 py-1 rounded bg-red-600 text-white">Delete</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
