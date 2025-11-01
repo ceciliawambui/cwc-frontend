@@ -14,7 +14,7 @@ export default function Navbar() {
     <nav
       className="
         fixed top-0 left-0 w-full z-50 backdrop-blur-xl
-        bg-white/80 dark:bg-[#0A0A0C]/90 border-b border-white/10 dark:border-white/10
+         dark:bg-[#0A0A0C]/90 border-b border-white/10 dark:border-white/10
         shadow-sm transition-all duration-500
         mb-6 md:mb-10
       "

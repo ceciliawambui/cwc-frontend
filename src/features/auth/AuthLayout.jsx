@@ -13,9 +13,9 @@ export default function AuthLayout({ title, subtitle, children }) {
     >
       <AnimatedBackground />
 
-      <div className="absolute top-6 right-6 z-20">
+      {/* <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
-      </div>
+      </div> */}
 
       <div className="container mx-auto px-6 z-10">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20">
