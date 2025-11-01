@@ -93,7 +93,7 @@ export default function AdminDashboard() {
           {activeSection === "Users" && <UserManagement users={users} />}
           {activeSection === "Settings" && <SettingsPanel />}
           {activeSection === "Courses" && <AdminCourses />}
-          {activeSection === "Topics" && <AdminTopics />} 
+          {activeSection === "Topics" && <AdminTopics />}
         </main>
       </div>
     </div>
@@ -236,16 +236,19 @@ function DashboardOverview() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [userRes, courseRes] = await Promise.all([
+        const [userRes, courseRes, topicRes] = await Promise.all([
           client.get("/api/users/"),
           client.get("/api/courses/"),
+          client.get("/api/topics/"),
         ]);
 
         const users = userRes.data || [];
         const courses = courseRes.data || [];
+        const topics = topicRes.data || [];
 
         // --- Totals ---
         const totalUsers = users.length;
+        const totalTopics = topics.length;
         const totalAdmins = users.filter((u) => u.role === "admin" || u.is_staff).length;
         const totalCourses = courses.length;
 
@@ -335,18 +338,25 @@ function DashboardOverview() {
               value={stats.totalUsers}
               description="Registered on the platform"
             />
-            <DashboardCard
+            {/* <DashboardCard
               icon={<ShieldCheck className="w-7 h-7" />}
               title="Admins"
               value={stats.totalAdmins}
               description="Administrative accounts"
-            />
+            /> */}
             <DashboardCard
               icon={<BookOpen className="w-7 h-7" />}
               title="Courses"
               value={stats.totalCourses}
               description="Active and published courses"
             />
+            <DashboardCard
+              icon={<Layers className="w-7 h-7" />}
+              title="Topics"
+              value={stats.totalTopics}
+              description="Learning topics available"
+            />
+
           </motion.div>
 
           {/* === Weekly Line Chart === */}
@@ -428,7 +438,7 @@ function DashboardOverview() {
           </div>
 
           {/* === Recent Activity === */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Users */}
             <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -472,6 +482,23 @@ function DashboardOverview() {
                 ))}
               </ul>
             </div>
+            {/* Topics */}
+            <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Recent Topics
+              </h3>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {(stats.recentTopics || []).map((t) => (
+                  <li key={t.id} className="py-3">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{t.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(t.created_at).toLocaleDateString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
           </div>
         </>
       )}

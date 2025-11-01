@@ -1,25 +1,26 @@
 /* eslint-disable no-unused-vars */
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import AnimatedBackground from "../../components/AnimatedBackground";
 import { Link } from "react-router-dom";
-import ThemeToggle from "../../components/ThemeToggle";
 import { motion } from "framer-motion";
+import ThemeToggle from "../../components/ThemeToggle";
+import { useTheme } from "../../context/ThemeContext";
+import heroImg from "../../assets/student.jpg";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
 
 export default function LandingPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/courses/`);
-        setCourses(res.data);
+        const res = await axios.get(`${BASE_URL}api/courses/`);
+        setCourses(res.data || []);
       } catch (err) {
-        console.error("Failed to load courses:", err);
+        console.error("Failed to load topics:", err);
       } finally {
         setLoading(false);
       }
@@ -28,83 +29,131 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden transition-colors duration-700 ease-in-out">
-      <AnimatedBackground />
+    <div
+      className={`min-h-screen flex flex-col overflow-hidden transition-colors duration-500 
+        ${theme === "dark" ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
+    >
+      {/* <div className="absolute top-6 right-6 z-30">
+        <ThemeToggle />
+      </div> */}
 
-      <div className="relative z-10 container mx-auto px-6 py-24">
+      {/* Hero */}
+      <section className="relative container mx-auto px-6 pt-28 pb-16 grid md:grid-cols-2 gap-10 items-center">
 
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-500">
-            Knowledge Hub
+        {/* text */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+          <h1
+            className={`text-5xl md:text-6xl font-extrabold leading-tight 
+              ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+          >
+            Unlock Modern{" "}
+            <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Tech Knowledge
+            </span>
           </h1>
 
-          <div className="flex items-center space-x-4">
-            <ThemeToggle />
+          <p
+            className={`mt-5 max-w-md text-base leading-relaxed 
+              ${theme === "dark" ? "text-white/80" : "text-gray-600"}`}
+          >
+            Dive into structured, community-curated resources covering React,
+            Django, UI/UX, DevOps, and every tool shaping the modern developer’s stack.
+          </p>
+
+          <div className="mt-8 flex gap-4">
+            <Link
+              to="/courses"
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow-lg hover:opacity-90 transition-all"
+            >
+              View Courses
+            </Link>
             <Link
               to="/login"
-              className="text-sm text-gray-800 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400"
+              className={`px-6 py-3 rounded-full border text-sm transition
+                ${theme === "dark"
+                  ? "border-white/40 text-white hover:bg-gray-800"
+                  : "border-gray-400 text-gray-700 hover:bg-gray-100"}`}
             >
-              Admin
-            </Link>
-            <Link
-              to="/register"
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-              Sign up
+              Log In
             </Link>
           </div>
-        </header>
+
+          <div className="mt-10 flex gap-8 flex-wrap text-center">
+            <div>
+              <h3 className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>80+</h3>
+              <p className={`${theme === "dark" ? "text-white/70" : "text-gray-500"} text-sm`}>Tech Topics</p>
+            </div>
+            <div>
+              <h3 className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>10K+</h3>
+              <p className={`${theme === "dark" ? "text-white/70" : "text-gray-500"} text-sm`}>Active Learners</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* image */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
+          <img src={heroImg} className="w-full max-w-md mx-auto rounded-xl drop-shadow-2xl" />
+        </motion.div>
+      </section>
+
+      {/* Topics */}
+      <main className="container mx-auto px-6 pb-24">
+        <motion.h2
+          className={`text-3xl font-bold mb-10 text-center 
+            ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          Explore Tech Courses
+        </motion.h2>
 
         {loading ? (
-          <div className="text-center mt-20 text-gray-500 dark:text-gray-400">
-            Loading courses...
-          </div>
-        ) : courses.length === 0 ? (
-          <div className="text-center mt-20 text-gray-500 dark:text-gray-400">
-            No courses available.
+          <div className={`${theme === "dark" ? "text-white/70" : "text-gray-500"} text-center py-20`}>
+            Loading topics...
           </div>
         ) : (
-          <motion.main
-            className="mt-12 grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
+          <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
-              <motion.article
+              <motion.div
                 key={course.id}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 200 }}
-                className="rounded-2xl p-6 glass-effect shadow-lg border border-white/20 dark:border-gray-800 hover:shadow-2xl transition-all"
+                className={`group relative p-6 rounded-2xl shadow-md border backdrop-blur-md transition-all overflow-hidden
+        ${theme === "dark"
+                    ? "bg-[#0b0c10] border-white/10 text-white"
+                    : "bg-white border-gray-200 text-gray-900"
+                  }`}
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                    {course.title || course.name}
-                  </h3>
-                  <div
-                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${
-                      course.color || "from-indigo-500 to-pink-500"
-                    } opacity-90`}
-                  />
-                </div>
+                {/* title */}
+                <h3
+                  className={`relative text-lg font-bold mb-2
+          ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                >
+                  {course.title}
+                </h3>
 
-                <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                  {course.description || "Curated course notes & examples."}
+                {/* description */}
+                <p className={`relative text-sm ${theme === "dark" ? "text-white/80" : "text-gray-600"}`}>
+                  {course.description || "Discover insights, code patterns, and guides for this topic."}
                 </p>
 
-                <div className="mt-4">
-                  <Link
-                    to={`/courses/${course.id}`}
-                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    Explore →
+                {/* bottom details */}
+                <div className={`relative mt-4 flex justify-between items-center 
+        ${theme === "dark" ? "text-white/70" : "text-gray-500"}`}>
+                  <Link to={`/courses/${course.id}`} className="text-sm font-medium underline">
+                    View topics →
                   </Link>
+                  <span className="text-xs">
+                    {course.created_at ? new Date(course.created_at).toLocaleDateString() : ""}
+                  </span>
                 </div>
-              </motion.article>
+              </motion.div>
             ))}
-          </motion.main>
+          </div>
+
         )}
-      </div>
+      </main>
+
     </div>
   );
 }
