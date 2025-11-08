@@ -52,12 +52,13 @@ export default function AdminDashboard() {
 
   const navLinks = [
     { name: "Dashboard", icon: <Home className="w-5 h-5" /> },
-    { name: "Languages", icon: <BookOpen className="w-5 h-5" /> },
-    { name: "AI Tools", icon: <Bot className="w-5 h-5" /> },
-    { name: "Users", icon: <Users className="w-5 h-5" /> },
-    { name: "Settings", icon: <Settings className="w-5 h-5" /> },
+    // { name: "Languages", icon: <BookOpen className="w-5 h-5" /> },
+    // { name: "AI Tools", icon: <Bot className="w-5 h-5" /> },
     { name: "Courses", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Topics", icon: <Layers className="w-5 h-5" /> },
+    { name: "Users", icon: <Users className="w-5 h-5" /> },
+    { name: "Settings", icon: <Settings className="w-5 h-5" /> },
+   
 
   ];
 
@@ -90,10 +91,11 @@ export default function AdminDashboard() {
 
         <main className="flex-1 px-6 py-8 md:px-10">
           {activeSection === "Dashboard" && <DashboardOverview />}
-          {activeSection === "Users" && <UserManagement users={users} />}
-          {activeSection === "Settings" && <SettingsPanel />}
           {activeSection === "Courses" && <AdminCourses />}
           {activeSection === "Topics" && <AdminTopics />}
+          {activeSection === "Users" && <UserManagement users={users} />}
+          {activeSection === "Settings" && <SettingsPanel />}
+   
         </main>
       </div>
     </div>
@@ -225,74 +227,97 @@ function DashboardOverview() {
     totalUsers: 0,
     totalAdmins: 0,
     totalCourses: 0,
+    totalTopics: 0,
     recentUsers: [],
     recentCourses: [],
+    recentTopics: [],
     weeklyActivity: [],
     monthlyTrends: [],
   });
   const [loading, setLoading] = useState(true);
 
+  // useEffect(() => {
+  //   const fetchDashboardData = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const [userRes, courseRes, topicRes] = await Promise.all([
+  //         client.get("/api/users/"),
+  //         client.get("/api/courses/"),
+  //         client.get("/api/topics/"),
+  //       ]);
+
+  //       const users = userRes.data || [];
+  //       const courses = courseRes.data || [];
+  //       const topics = topicRes.data || [];
+
+
+  //       // --- Totals ---
+  //       const totalUsers = users.length;
+  //       const totalTopics = topics.length;
+  //       const totalAdmins = users.filter((u) => u.role === "admin" || u.is_staff).length;
+  //       const totalCourses = courses.length;
+
+  //       // --- Weekly Activity (Mocked for Display) ---
+  //       const weeklyActivity = Array.from({ length: 7 }).map((_, i) => ({
+  //         day: `Day ${i + 1}`,
+  //         users: Math.floor(Math.random() * 200) + 50,
+  //         courses: Math.floor(Math.random() * 50) + 10,
+  //         topics: Math.floor(Math.random() * 80) + 20,
+  //       }));
+
+  //       // --- Monthly Trends (based on created_at) ---
+  //       const months = [
+  //         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  //         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  //       ];
+
+  //       const userMonthCount = Array(12).fill(0);
+  //       const courseMonthCount = Array(12).fill(0);
+
+  //       users.forEach((u) => {
+  //         const date = new Date(u.created_at);
+  //         if (!isNaN(date)) userMonthCount[date.getMonth()]++;
+  //       });
+
+  //       courses.forEach((c) => {
+  //         const date = new Date(c.created_at);
+  //         if (!isNaN(date)) courseMonthCount[date.getMonth()]++;
+  //       });
+
+  //       const monthlyTrends = months.map((m, i) => ({
+  //         month: m,
+  //         users: userMonthCount[i],
+  //         courses: courseMonthCount[i],
+  //       }));
+
+  //       setStats({
+  //         totalUsers,
+  //         totalAdmins,
+  //         totalCourses,
+  //         totalTopics,
+  //         recentUsers: users.slice(0, 5),
+  //         recentCourses: courses.slice(0, 5),
+  //         recentTopics: topics.slice(0, 5),
+  //         weeklyActivity,
+  //         monthlyTrends,
+  //       });
+  //     } catch (err) {
+  //       console.error(err);
+  //       toast.error("Failed to load analytics.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchDashboardData();
+  // }, []);
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
+      const BASE_URL = "http://localhost:8000";
       try {
-        setLoading(true);
-        const [userRes, courseRes, topicRes] = await Promise.all([
-          client.get("/api/users/"),
-          client.get("/api/courses/"),
-          client.get("/api/topics/"),
-        ]);
-
-        const users = userRes.data || [];
-        const courses = courseRes.data || [];
-        const topics = topicRes.data || [];
-
-        // --- Totals ---
-        const totalUsers = users.length;
-        const totalTopics = topics.length;
-        const totalAdmins = users.filter((u) => u.role === "admin" || u.is_staff).length;
-        const totalCourses = courses.length;
-
-        // --- Weekly Activity (Mocked for Display) ---
-        const weeklyActivity = Array.from({ length: 7 }).map((_, i) => ({
-          day: `Day ${i + 1}`,
-          users: Math.floor(Math.random() * 200) + 50,
-          courses: Math.floor(Math.random() * 50) + 10,
-        }));
-
-        // --- Monthly Trends (based on created_at) ---
-        const months = [
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-        ];
-
-        const userMonthCount = Array(12).fill(0);
-        const courseMonthCount = Array(12).fill(0);
-
-        users.forEach((u) => {
-          const date = new Date(u.created_at);
-          if (!isNaN(date)) userMonthCount[date.getMonth()]++;
-        });
-
-        courses.forEach((c) => {
-          const date = new Date(c.created_at);
-          if (!isNaN(date)) courseMonthCount[date.getMonth()]++;
-        });
-
-        const monthlyTrends = months.map((m, i) => ({
-          month: m,
-          users: userMonthCount[i],
-          courses: courseMonthCount[i],
-        }));
-
-        setStats({
-          totalUsers,
-          totalAdmins,
-          totalCourses,
-          recentUsers: users.slice(0, 5),
-          recentCourses: courses.slice(0, 5),
-          weeklyActivity,
-          monthlyTrends,
-        });
+        const res = await fetch(`${BASE_URL}/dashboard/stats/`);
+        const data = await res.json();
+        setStats(data);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load analytics.");
@@ -300,9 +325,13 @@ function DashboardOverview() {
         setLoading(false);
       }
     };
-
-    fetchDashboardData();
+  
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
   }, []);
+  
+  
 
   return (
     <div>
@@ -393,6 +422,15 @@ function DashboardOverview() {
                 <Legend />
                 <Line type="monotone" dataKey="users" stroke="#6366F1" strokeWidth={3} dot={{ r: 5 }} name="Users Joined" />
                 <Line type="monotone" dataKey="courses" stroke="#EC4899" strokeWidth={3} dot={{ r: 5 }} name="Courses Added" />
+                <Line
+                  type="monotone"
+                  dataKey="topics"
+                  stroke="#10B981"  
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                  name="Topics Added"
+                />
+
               </Chart>
             </ResponsiveContainer>
 
@@ -402,7 +440,7 @@ function DashboardOverview() {
           {/* === Monthly Bar Chart === */}
           <div className="rounded-2xl p-6 bg-white/80 dark:bg-gray-800/50 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700 mb-10">
             <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Bar className="w-5 h-5 text-pink-500" /> Monthly Growth (Users vs Courses)
+              <Bar className="w-5 h-5 text-pink-500" /> Monthly Growth (Users vs Courses vs Topics)
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.monthlyTrends || []}>
@@ -432,6 +470,7 @@ function DashboardOverview() {
                 <Legend />
                 <Bar dataKey="users" fill="#6366F1" name="Users" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="courses" fill="#EC4899" name="Courses" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="topics" fill="#10B981" name="Topics" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
 

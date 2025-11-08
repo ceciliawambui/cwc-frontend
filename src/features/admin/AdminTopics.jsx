@@ -18,6 +18,7 @@ import {
   List as ListIcon,
   ListOrdered as ListOrderedIcon,
   Youtube as YoutubeIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import client from "../../features/auth/api"; // axios with token
@@ -347,9 +348,24 @@ export default function AdminTopics() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <motion.div className="absolute inset-0 bg-black/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} />
-            <motion.div initial={{ y: 20, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 10, opacity: 0, scale: 0.98 }} className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-gray-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 sm:px-6 md:px-10 lg:px-20">
+
+            {/* overlay */}
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModal} // clicking outside closes
+            />
+
+            {/* actual modal box */}
+            <motion.div
+              initial={{ y: 20, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 10, opacity: 0, scale: 0.98 }}
+              className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200"
+            >
               <div className="flex items-center justify-between px-5 py-4 border-b">
                 <h2 className="text-lg font-semibold">{editingTopic ? "Edit Topic" : "Add Topic"}</h2>
                 <button onClick={closeModal} className="text-gray-600 hover:text-gray-900 p-2"><X size={18} /></button>
@@ -381,7 +397,7 @@ export default function AdminTopics() {
                 </div>
 
                 {/* Editor Toolbar */}
-                <div className="flex flex-wrap items-center gap-2 bg-gray-50 border rounded px-2 py-2">
+                <div className="flex flex-wrap items-center gap-2 bg-gray-50 border rounded px-2 py-2 sticky top-0 z-10">
                   <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className="px-2 py-1 border rounded text-sm bg-white">H1</button>
                   <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className="px-2 py-1 border rounded text-sm bg-white">H2</button>
                   <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className="px-2 py-1 border rounded text-sm bg-white"><Bold size={14} /></button>
@@ -392,9 +408,19 @@ export default function AdminTopics() {
                   <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className="px-2 py-1 border rounded text-sm bg-white"><QuoteIcon size={14} /></button>
                   <button type="button" onClick={insertCodeBlockWithLanguage} className="px-2 py-1 border rounded text-sm bg-white"><Code size={14} /></button>
                   <button type="button" onClick={() => { const url = window.prompt("YouTube URL"); if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run(); }} className="px-2 py-1 border rounded text-sm bg-white"><YoutubeIcon size={14} /></button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = window.prompt("Image URL")
+                      if (url) editor.chain().focus().setImage({ src: url }).run()
+                    }}
+                    className="px-2 py-1 border rounded text-sm bg-white"
+                  >
+                    <ImageIcon size={14} />
+                  </button>
                 </div>
 
-                <div className="border border-gray-200 rounded"><EditorContent editor={editor} /></div>
+                <div className="border border-gray-200 rounded h-[500px] overflow-y-auto"><EditorContent editor={editor} /></div>
 
                 <div className="flex justify-end gap-3">
                   <button type="button" onClick={closeModal} className="px-4 py-2 border rounded bg-white text-gray-700">Cancel</button>
