@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import ThemeToggle from "../../components/ThemeToggle";
 import { useTheme } from "../../context/ThemeContext";
 import heroImg from "../../assets/student.jpg";
+import Chatbot from "../../components/Chatbot";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
 
@@ -153,6 +154,7 @@ export default function LandingPage() {
 
         )}
       </main>
+      <Chatbot />
 
     </div>
   );

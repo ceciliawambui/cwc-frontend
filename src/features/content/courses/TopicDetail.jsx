@@ -140,14 +140,14 @@ function UniversalCodeSandbox({ language, code }) {
           value={userCode}
           onChange={(e) => setUserCode(e.target.value)}
           spellCheck="false"
-          className={`font-mono text-sm border rounded-lg p-3 w-full min-h-[320px] focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
+          className={`font-mono text-sm border rounded-lg p-3 w-full min-h-80 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
             ${theme === "dark"
               ? "bg-[#0F1112] text-green-200 border-gray-800"
               : "bg-gray-900 text-green-100 border-gray-700"
             }`}
         />
 
-        <div className={`border rounded-lg overflow-hidden min-h-[320px] ${theme === "dark" ? "border-gray-800" : "border-gray-700"}`}>
+        <div className={`border rounded-lg overflow-hidden min-h-80 ${theme === "dark" ? "border-gray-800" : "border-gray-700"}`}>
           {isWebLang ? (
             <iframe ref={iframeRef} title="sandbox" className={`w-full h-full ${theme === "dark" ? "bg-white/5" : "bg-white"}`} />
           ) : (
@@ -345,7 +345,7 @@ export default function TopicDetail() {
       </aside>
 
       {/* --- Main Content --- */}
-      <main className="flex-1 lg:ml-10 lg:mr-[25rem] px-5 py-10">
+      <main className="flex-1 lg:ml-10 lg:mr-100 px-5 py-10">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
