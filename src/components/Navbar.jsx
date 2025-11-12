@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import { Sun, Moon, Menu, X, Coffee } from "lucide-react";
-import SupportModal from "./SupportModal"; 
+import { Sun, Moon, Menu, X, Coffee, Sparkles } from "lucide-react";
+import SupportModal from "./SupportModal";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -48,6 +48,14 @@ export default function Navbar() {
             >
               <Coffee size={16} /> Support
             </button>
+            {/* <button
+              onClick={() => window.dispatchEvent(new Event("open-chat"))}
+              className="flex items-center gap-1 bg-linear-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition"
+              title="Ask AI to find the right topic"
+            >
+              <Sparkles size={16} /> <span>Ask AI</span>
+            </button> */}
+
 
             {/* Theme Toggle */}
             <button

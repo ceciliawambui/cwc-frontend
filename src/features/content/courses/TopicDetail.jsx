@@ -4,13 +4,10 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Play, RefreshCcw, Copy } from "lucide-react";
-import { useTheme } from "../../../context/ThemeContext"; // adjust path if needed
+import { useTheme } from "../../../context/ThemeContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
-/* ---------------------------
-   🔹 Language Icons
---------------------------- */
 const LanguageIcon = ({ lang }) => {
   const icons = {
     javascript: "🟨",
@@ -25,8 +22,7 @@ const LanguageIcon = ({ lang }) => {
 };
 
 /* ---------------------------
-   🔹 Universal Sandbox
-   Uses theme to style editor/output for both modes
+   🔹 Universal Sandbox (refined UI)
 --------------------------- */
 function UniversalCodeSandbox({ language, code }) {
   const { theme } = useTheme();
@@ -52,11 +48,8 @@ function UniversalCodeSandbox({ language, code }) {
             <body>
               ${language === "html" ? userCode : ""}
               <script>
-                try {
-                  ${language.includes("js") ? userCode : ""}
-                } catch(e) {
-                  document.body.innerHTML += '<pre style="color:red;">' + e + '</pre>';
-                }
+                try { ${language.includes("js") ? userCode : ""} }
+                catch(e){document.body.innerHTML += '<pre style="color:red;">'+e+'</pre>';}
               </script>
             </body>
           </html>`;
@@ -78,80 +71,79 @@ function UniversalCodeSandbox({ language, code }) {
   const resetCode = () => setUserCode(originalCode.current);
   const copyCode = async () => {
     await navigator.clipboard.writeText(userCode);
-    // Simple toast fallback
-    try {
-      // If you use a toaster lib it will show up nicer
-      alert("✅ Code copied to clipboard!");
-    } catch {
-      /* noop */
-    }
+    alert("Code copied to clipboard!");
   };
-
-  // theme-aware classes
-  const headerBg = theme === "dark" ? "bg-[#0B0B0D] border-gray-800" : "bg-gray-100 border-gray-300";
-  const editorBg = theme === "dark" ? "bg-[#111214] text-green-200" : "bg-gray-900 text-green-100"; // editor uses dark background regardless for readability
-  const outputBg = theme === "dark" ? "bg-[#0B0B0D] text-green-300" : "bg-black text-green-400";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className={`my-8 border rounded-xl overflow-hidden shadow transition-colors duration-300
-        ${theme === "dark" ? "border-gray-800 bg-[#0B0B0D]" : "border-gray-200 bg-white"}`}
+      className={`my-10 border rounded-2xl overflow-hidden shadow-md transition-colors duration-300 ${theme === "dark"
+          ? "border-gray-800 bg-[#0B0B0D]/70 backdrop-blur-lg"
+          : "border-gray-200 bg-white"
+        }`}
     >
-      {/* Header */}
-      <div className={`flex justify-between items-center px-4 py-3 border-b ${headerBg}`}>
-        <div className={`flex items-center gap-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>
+      <div
+        className={`flex justify-between items-center px-4 py-3 border-b ${theme === "dark" ? "border-gray-800 text-gray-300" : "border-gray-200 text-gray-700"
+          }`}
+      >
+        <div className="flex items-center gap-2">
           <LanguageIcon lang={language} />
-          <span className="font-semibold uppercase text-sm">{(language || "").toUpperCase()}</span>
+          <span className="font-semibold uppercase text-sm">{language?.toUpperCase()}</span>
         </div>
-
         <div className="flex gap-2">
           <button
             onClick={runCode}
             disabled={isRunning}
-            className="flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition"
+            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm transition"
           >
             <Play size={14} /> {isRunning ? "Running..." : "Run"}
           </button>
-
           <button
             onClick={resetCode}
-            className={`p-2 rounded-md transition ${theme === "dark" ? "bg-gray-800 hover:bg-gray-700" : "bg-gray-200 hover:bg-gray-300"}`}
-            title="Reset code"
+            title="Reset"
+            className="p-2 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-800 transition"
           >
             <RefreshCcw size={15} />
           </button>
-
           <button
             onClick={copyCode}
-            className={`p-2 rounded-md transition ${theme === "dark" ? "bg-gray-800 hover:bg-gray-700" : "bg-gray-200 hover:bg-gray-300"}`}
-            title="Copy code"
+            title="Copy"
+            className="p-2 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-800 transition"
           >
             <Copy size={15} />
           </button>
         </div>
       </div>
 
-      {/* Editor + Output */}
       <div className="grid md:grid-cols-2 gap-3 p-4">
         <textarea
           value={userCode}
           onChange={(e) => setUserCode(e.target.value)}
           spellCheck="false"
-          className={`font-mono text-sm border rounded-lg p-3 w-full min-h-80 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
+          className={`font-mono text-sm border rounded-lg p-3 w-full min-h-80 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition
             ${theme === "dark"
               ? "bg-[#0F1112] text-green-200 border-gray-800"
               : "bg-gray-900 text-green-100 border-gray-700"
             }`}
         />
 
-        <div className={`border rounded-lg overflow-hidden min-h-80 ${theme === "dark" ? "border-gray-800" : "border-gray-700"}`}>
+        <div
+          className={`border rounded-lg overflow-hidden min-h-80 ${theme === "dark" ? "border-gray-800" : "border-gray-700"
+            }`}
+        >
           {isWebLang ? (
-            <iframe ref={iframeRef} title="sandbox" className={`w-full h-full ${theme === "dark" ? "bg-white/5" : "bg-white"}`} />
+            <iframe
+              ref={iframeRef}
+              title="sandbox"
+              className="w-full h-full bg-white dark:bg-gray-900"
+            />
           ) : (
-            <pre className={`p-3 whitespace-pre-wrap text-sm ${theme === "dark" ? "bg-[#0B0B0D] text-green-300" : "bg-black text-green-400"}`}>
+            <pre
+              className={`p-3 whitespace-pre-wrap text-sm ${theme === "dark" ? "bg-[#0B0B0D] text-green-300" : "bg-black text-green-400"
+                }`}
+            >
               {output || "Output will appear here after running..."}
             </pre>
           )}
@@ -161,76 +153,43 @@ function UniversalCodeSandbox({ language, code }) {
   );
 }
 
-/* ---------------------------
-   🔹 TipTap Renderer (theme-aware)
---------------------------- */
-function renderTipTapContent(node, idx) {
-  if (!node) return null;
-  // We'll import theme inside the render branch to keep renderer pure enough;
-  // But to avoid hook rules, better to let caller wrap content rendering in component scope.
-  // In this file we will call this function from within TopicDetail where we have theme.
-  switch (node.type) {
-    case "heading": {
-      const Tag = `h${node.attrs?.level || 2}`;
-      return (
-        <Tag key={idx} className="mt-6 mb-3 font-bold text-2xl">
-          {node.content?.map((c, i) => renderTipTapContent(c, i))}
-        </Tag>
-      );
-    }
-    case "paragraph":
-      return (
-        <p key={idx} className="mb-4 leading-relaxed">
-          {node.content?.map((c, i) => renderTipTapContent(c, i))}
-        </p>
-      );
-    case "codeBlock": {
-      const lang = node.attrs?.language || "javascript";
-      const code = node.content?.map((c) => c.text || "").join("") || "";
-      return <UniversalCodeSandbox key={idx} language={lang} code={code} />;
-    }
-    case "text":
-      return node.text;
-    default:
-      if (Array.isArray(node.content)) return node.content.map(renderTipTapContent);
-      return null;
-  }
-}
+// Embed Helper
 
-/* ---------------------------
-   🔹 Video Embed Helper
---------------------------- */
 const getEmbedUrl = (url) => {
   if (!url) return null;
-  try {
-    const youtubeRegex =
-      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/;
-    const vimeoRegex = /vimeo\.com\/(\d+)/;
-    if (youtubeRegex.test(url)) {
-      const id = url.match(youtubeRegex)[1];
-      return `https://www.youtube.com/embed/${id}`;
-    } else if (vimeoRegex.test(url)) {
-      const id = url.match(vimeoRegex)[1];
-      return `https://player.vimeo.com/video/${id}`;
-    }
-  } catch (e) {
-    console.warn("Invalid video URL:", url);
-  }
+  const yt = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+  const vm = /vimeo\.com\/(\d+)/;
+  if (yt.test(url)) return `https://www.youtube.com/embed/${url.match(yt)[1]}`;
+  if (vm.test(url)) return `https://player.vimeo.com/video/${url.match(vm)[1]}`;
   return null;
 };
 
-/* ---------------------------
-   🔹 Main Component (TopicDetail)
---------------------------- */
+//  Main Topic Detail
+
 export default function TopicDetail() {
   const { slug } = useParams();
   const { theme } = useTheme();
-
   const [topic, setTopic] = useState(null);
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
 
-  // Fetch Topic
+  const handleSummarize = async () => {
+    if (!topic?.id) return;
+    setSummarizing(true);
+    try {
+      const res = await axios.get(`${BASE_URL}/api/topics/${topic.id}/summarize/`);
+      setSummary(res.data.summary);
+    } catch (err) {
+      console.error(err);
+      setSummary("⚠️ Failed to generate summary.");
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
+
   useEffect(() => {
     (async () => {
       try {
@@ -244,7 +203,6 @@ export default function TopicDetail() {
     })();
   }, [slug]);
 
-  // Fetch Recommended Topics
   useEffect(() => {
     if (!topic?.id) return;
     (async () => {
@@ -259,80 +217,55 @@ export default function TopicDetail() {
 
   if (loading)
     return (
-      <div className={`min-h-screen flex items-center justify-center animate-pulse ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+      <div className="flex justify-center items-center min-h-screen text-gray-500 animate-pulse">
         Loading topic...
       </div>
     );
 
   if (!topic)
     return (
-      <div className={`min-h-screen flex items-center justify-center ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+      <div className="flex justify-center items-center min-h-screen text-red-500">
         Topic not found.
       </div>
     );
 
-  const contentNodes = topic.content?.content || [];
   const embedUrl = getEmbedUrl(topic.video_url);
-
-  // helper to render nodes with theme-aware class wrappers
-  const renderNode = (node, idx) => {
-    if (!node) return null;
-    switch (node.type) {
-      case "heading": {
-        const Tag = `h${node.attrs?.level || 2}`;
-        return (
-          <Tag
-            key={idx}
-            className={`mt-6 mb-3 font-bold text-2xl ${theme === "dark" ? "text-indigo-300" : "text-indigo-700"}`}
-          >
-            {node.content?.map((c, i) => renderNode(c, i))}
-          </Tag>
-        );
-      }
-      case "paragraph":
-        return (
-          <p key={idx} className={`${theme === "dark" ? "text-gray-200" : "text-gray-800"} mb-4 leading-relaxed`}>
-            {node.content?.map((c, i) => renderNode(c, i))}
-          </p>
-        );
-      case "codeBlock": {
-        const lang = node.attrs?.language || "javascript";
-        const code = node.content?.map((c) => c.text || "").join("") || "";
-        return <UniversalCodeSandbox key={idx} language={lang} code={code} />;
-      }
-      case "text":
-        return node.text;
-      default:
-        if (Array.isArray(node.content)) return node.content.map(renderNode);
-        return null;
-    }
-  };
+  const contentNodes = topic.content?.content || [];
 
   return (
-    <div className={`relative flex flex-col lg:flex-row w-full min-h-screen mt-6 transition-colors duration-300
-      ${theme === "dark" ? "bg-gray-950 text-white" : "bg-gray-50 text-gray-900"}`}>
-      {/* --- Floating Sidebar --- */}
+    <div
+      className={`relative flex flex-col lg:flex-row w-full min-h-screen mt-6 transition-colors duration-300 ${theme === "dark"
+          ? "bg-[#0A0A0C] text-gray-100"
+          : "bg-gray-50 text-gray-900"
+        }`}
+    >
+      {/* --- Sidebar --- */}
       <aside
-        className={`lg:w-80 w-full lg:fixed lg:right-6 lg:top-24 rounded-2xl p-6 h-fit z-20 transition-colors
-          ${theme === "dark" ? "bg-[#141416] border border-gray-800 shadow-xl" : "bg-white border border-gray-200 shadow-xl"}`}
+        className={`lg:w-80 w-full lg:fixed lg:right-8 lg:top-28 rounded-2xl p-6 z-20 backdrop-blur-lg ${theme === "dark"
+            ? "bg-[#141416]/70 border border-gray-800 shadow-2xl"
+            : "bg-white border border-gray-200 shadow-xl"
+          }`}
       >
-        <h3 className={`font-bold text-xl mb-4 ${theme === "dark" ? "text-indigo-300" : "text-indigo-700"}`}>
+        <h3
+          className={`font-semibold text-lg mb-4 ${theme === "dark" ? "text-indigo-300" : "text-indigo-700"
+            }`}
+        >
           Recommended Topics
         </h3>
-
         {recommended.length ? (
-          <ul className="space-y-3">
+          <ul className="space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
             {recommended.map((t) => (
               <li key={t.id}>
                 <Link
                   to={`/topics/${t.slug}`}
-                  className={`block p-3 rounded-lg transition
-                    ${theme === "dark" ? "hover:bg-[#111213]" : "hover:bg-indigo-50"}`}
+                  className={`block p-3 rounded-lg transition ${theme === "dark" ? "hover:bg-[#111213]" : "hover:bg-indigo-50"
+                    }`}
                 >
-                  <p className={`${theme === "dark" ? "font-semibold text-gray-100" : "font-semibold text-gray-800"}`}>
-                    {t.title}
-                  </p>
-                  <p className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"} text-sm line-clamp-2`}>
+                  <p className="font-semibold truncate">{t.title}</p>
+                  <p
+                    className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      } line-clamp-2`}
+                  >
                     {t.description}
                   </p>
                 </Link>
@@ -340,56 +273,66 @@ export default function TopicDetail() {
             ))}
           </ul>
         ) : (
-          <p className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"} text-sm`}>No related topics found.</p>
+          <p className="text-sm text-gray-500">No related topics yet.</p>
         )}
       </aside>
 
       {/* --- Main Content --- */}
-      <main className="flex-1 lg:ml-10 lg:mr-100 px-5 py-10">
+      <main className="flex-1 lg:ml-10 px-5 py-10 lg:pr-100">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className={`text-4xl md:text-4xl font-extrabold mt-4 mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+          className="text-4xl font-extrabold mb-4"
         >
           {topic.title}
         </motion.h1>
 
-        {topic.description && (
-          <p className={`${theme === "dark" ? "text-gray-200" : "text-gray-700"} text-lg mb-6 leading-relaxed`}>
-            {topic.description}
-          </p>
-        )}
+        <p className="text-lg opacity-90 mb-8 leading-relaxed">{topic.description}</p>
+        
 
-        {/* Content */}
-        <div className="prose max-w-none">
-          {contentNodes.map((node, idx) => renderNode(node, idx))}
-        </div>
+        <article className="prose max-w-none prose-headings:font-semibold dark:prose-invert">
+          {contentNodes.map((node, idx) => {
+            if (node.type === "codeBlock") {
+              const lang = node.attrs?.language || "javascript";
+              const code = node.content?.map((c) => c.text || "").join("") || "";
+              return <UniversalCodeSandbox key={idx} language={lang} code={code} />;
+            }
+            if (node.type === "heading") {
+              const Tag = `h${node.attrs?.level || 2}`;
+              return <Tag key={idx}>{node.content?.map((c, i) => c.text || "")}</Tag>;
+            }
+            if (node.type === "paragraph")
+              return <p key={idx}>{node.content?.map((c) => c.text || "")}</p>;
+            return null;
+          })}
+        </article>
 
-        {/* Video Section */}
-        <div className={`mt-10 border-t pt-8 ${theme === "dark" ? "border-gray-800" : "border-gray-200"}`}>
-          <h3 className={`font-bold text-2xl mb-4 ${theme === "dark" ? "text-indigo-300" : "text-indigo-700"}`}>
+        {/* --- Video Section --- */}
+        <section
+          className={`mt-14 border-t pt-8 ${theme === "dark" ? "border-gray-800" : "border-gray-200"
+            }`}
+        >
+          <h3
+            className={`font-bold text-2xl mb-4 ${theme === "dark" ? "text-indigo-300" : "text-indigo-700"
+              }`}
+          >
             🎥 Watch Lesson Video
           </h3>
-
           {embedUrl ? (
-            <div className="flex justify-center">
-              <div className={`aspect-video w-full max-w-2xl rounded-xl overflow-hidden shadow-lg ${theme === "dark" ? "" : ""}`}>
-                <iframe
-                  src={embedUrl}
-                  title="Topic Video"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
+            <div className="relative rounded-2xl overflow-hidden max-w-3xl mx-auto shadow-xl group">
+              <iframe
+                src={embedUrl}
+                title="Lesson Video"
+                className="w-full aspect-video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
           ) : (
-            <p className={`${theme === "dark" ? "text-gray-400 italic" : "text-gray-500 italic"}`}>
-              No video lesson available for this topic yet.
-            </p>
+            <p className="italic text-gray-500">No video available for this topic yet.</p>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );
