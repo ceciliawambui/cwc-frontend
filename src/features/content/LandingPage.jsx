@@ -159,6 +159,7 @@ export default function LandingPage() {
       </section>
 
       {/* ---------------- FEATURED COURSES ---------------- */}
+      {/* ---------------- FEATURED COURSES ---------------- */}
       <section className="py-20 border-t border-white/10 container mx-auto px-6">
         <motion.h2
           className={`text-3xl font-bold mb-12 text-center ${textPrimary}`}
@@ -172,65 +173,142 @@ export default function LandingPage() {
           <div className="text-center opacity-70">Loading courses...</div>
         ) : (
           <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => (
-              <motion.div
-                key={course.id}
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 250 }}
-                className={`rounded-3xl overflow-hidden border shadow-lg group transition
-                  ${theme === "dark" ? "bg-gray-900 border-white/10" : "bg-white border-gray-200"}`}
-              >
-                <div className="p-8">
-                  <h3 className={`text-2xl font-bold mb-3 ${textPrimary}`}>{course.title}</h3>
-                  <p className={`text-sm mb-5 ${textSecondary}`}>
-                    {course.description || "Explore expert-curated resources for developers."}
-                  </p>
-                  <Link
-                    to={`/courses/${course.id}`}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-linear-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow hover:opacity-90"
-                  >
-                    Explore →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+            {courses.map((course) => {
+              const key = course.title.toLowerCase();
+
+              // Map titles to SimpleIcons CDN logos
+              const getLogoUrl = () => {
+                if (key.includes("python")) return "https://cdn.simpleicons.org/python";
+                if (key.includes("javascript")) return "https://cdn.simpleicons.org/javascript";
+                if (key.includes("react")) return "https://cdn.simpleicons.org/react";
+                if (key.includes("django")) return "https://cdn.simpleicons.org/django";
+                if (key.includes("node")) return "https://cdn.simpleicons.org/nodedotjs";
+                if (key.includes("html")) return "https://cdn.simpleicons.org/html5";
+                if (key.includes("css")) return "https://cdn.simpleicons.org/css3";
+                if (key.includes("java")) return "https://cdn.simpleicons.org/java";
+                if (key.includes("figma")) return "https://cdn.simpleicons.org/figma";
+                if (key.includes("tailwind")) return "https://cdn.simpleicons.org/tailwindcss";
+                if (key.includes("typescript")) return "https://cdn.simpleicons.org/typescript";
+                if (key.includes("vue")) return "https://cdn.simpleicons.org/vuedotjs";
+                if (key.includes("php")) return "https://cdn.simpleicons.org/php";
+                return "https://cdn.simpleicons.org/code";
+              };
+
+              return (
+                <motion.div
+                  key={course.id}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 250 }}
+                  className={`rounded-3xl overflow-hidden border shadow-lg group transition
+              ${theme === "dark"
+                      ? "bg-gray-900 border-white/10"
+                      : "bg-white border-gray-200"
+                    }`}
+                >
+                  <div className="p-8">
+                    {/* Icon + Title */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={getLogoUrl()}
+                        alt={course.title}
+                        className="w-6 h-6 object-contain"
+                      />
+                      <h3 className={`text-2xl font-bold ${textPrimary}`}>
+                        {course.title}
+                      </h3>
+                    </div>
+
+                    <p className={`text-sm mb-5 ${textSecondary}`}>
+                      {course.description ||
+                        "Explore expert-curated resources for developers."}
+                    </p>
+
+                    <Link
+                      to={`/courses/${course.id}`}
+                      className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-linear-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow hover:opacity-90"
+                    >
+                      Explore →
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </section>
+
       {/* ---------------- LATEST TOPICS ---------------- */}
+      {/* LATEST TOPICS */}
       <section className="py-20 border-t border-white/10 container mx-auto px-6">
         <motion.h2
           className={`text-3xl font-bold mb-12 text-center ${textPrimary}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          Latest Added Topics 
+          Latest Added Topics
         </motion.h2>
 
         {loading ? (
           <div className="text-center opacity-70">Loading topics...</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {topics.map((topic) => (
-              <motion.div
-                key={topic.id}
-                whileHover={{ y: -3 }}
-                transition={{ duration: 0.2 }}
-                className={`rounded-2xl border shadow-sm p-6 transition-all hover:shadow-lg 
-                  ${theme === "dark" ? "bg-gray-900 border-white/10 text-white": "bg-white border-gray-200 text-gray-90"}`}
-              >
-                <h4 className={`font-semibold text-lg mb-2 ${textPrimary}`}>{topic.title}</h4>
-                <p className="text-sm opacity-80 mb-3 line-clamp-3">
-                  {topic.description || "Fresh insights and trends from the tech world."}
-                </p>
-                <Link to={`/topics/${topic.slug}`} className="underline text-indigo-500 hover:text-indigo-600 text-xs">
-                  Read →
-                </Link>
-              </motion.div>
-            ))}
+            {topics.map((topic) => {
+              const courseTitle = topic.course_detail?.title || "";
+              return (
+                <motion.div
+                  key={topic.id}
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className={`relative rounded-3xl border shadow-lg p-6 transition-all hover:shadow-xl overflow-hidden 
+                    ${theme === "dark"
+                      ? "bg-linear-to-br from-gray-900 via-gray-950 to-black border-gray-800 text-white"
+                      : "bg-white border-gray-200 text-gray-900"
+                    }`}
+                >
+                  {/* Top-right course tag */}
+                  {courseTitle && (
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full
+                          ${theme === "dark"
+                            ? "bg-indigo-500/20 text-indigo-300"
+                            : "bg-indigo-100 text-indigo-700"
+                          }`}
+                      >
+                        {courseTitle}
+                      </span>
+                    </div>
+                  )}
+
+                  <h4 className={`font-semibold text-lg mb-3 pr-16 ${textPrimary}`}>
+                    {topic.title}
+                  </h4>
+
+                  <p
+                    className={`text-sm opacity-80 mb-4 line-clamp-3 ${theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                  >
+                    {topic.description ||
+                      "Fresh insights and trends from the tech world."}
+                  </p>
+
+                  <Link
+                    to={`/topics/${topic.slug}`}
+                    className={`inline-block text-xs font-medium underline transition-colors
+                      ${theme === "dark"
+                        ? "text-indigo-400 hover:text-indigo-300"
+                        : "text-indigo-600 hover:text-indigo-500"
+                      }`}
+                  >
+                    Read →
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </section>
+
 
       <section className="relative py-24">
         <div className="absolute inset-0 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-20 blur-2xl"></div>

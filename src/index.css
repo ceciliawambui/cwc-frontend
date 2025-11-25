@@ -143,5 +143,13 @@
   padding-bottom: 0.15em; 
 }
 
+.ck.ck-editor__main pre {
+  background: #1e1e1e !important;
+  color: #eee !important;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+
 
 @import "tailwindcss";
