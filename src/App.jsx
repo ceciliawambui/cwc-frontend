@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext"; // ✅ import
+import { ThemeProvider } from "./context/ThemeContext";
 import useAuth from "./hooks/useAuth";
 import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
@@ -23,7 +23,7 @@ function PrivateAdmin({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <ThemeProvider> {/* ✅ Wrap your whole app here */}
+      <ThemeProvider> 
         <BrowserRouter>
         <Navbar />
           <Toaster position="top-right" />

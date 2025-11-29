@@ -49,11 +49,11 @@ client.interceptors.response.use(
 );
 
 export async function loginRequest({ email, password }) {
-  return client.post("/login/", { username: email, password });
+  return client.post(`${API_BASE}/login/`, { username: email, password });
 }
 
 export async function registerRequest(payload) {
-  return client.post("/register/", payload);
+  return client.post(`${API_BASE}/register/`, payload);
 }
 
 export default client;
