@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useTheme } from "../../../context/ThemeContext";
 import { CalendarDays } from "lucide-react";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -16,7 +16,7 @@ export default function CoursesPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}api/courses/`);
+        const res = await axios.get(`${BASE_URL}/api/courses/`);
         setCourses(res.data || []);
       } catch (err) {
         console.error("Failed to load courses:", err);

@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import Chatbot from "../../components/Chatbot";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
+const BASE_URL = import.meta.env.VITE_API_BASE;
+console.log("API Base URL:", BASE_URL);
 
 export default function LandingPage() {
   const [courses, setCourses] = useState([]);
@@ -25,8 +26,8 @@ export default function LandingPage() {
     const fetchData = async () => {
       try {
         const [courseRes, topicRes] = await Promise.all([
-          axios.get(`${BASE_URL}api/courses/`),
-          axios.get(`${BASE_URL}api/topics/`),
+          axios.get(`${BASE_URL}/api/courses/`),
+          axios.get(`${BASE_URL}/api/topics/`),
         ]);
         setCourses(courseRes.data.slice(0, 3));
         setTopics(topicRes.data.slice(0, 6));

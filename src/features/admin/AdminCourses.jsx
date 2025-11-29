@@ -232,7 +232,7 @@ export default function AdminCourses() {
 
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-pink-500 text-white px-4 py-2 rounded-xl shadow-lg hover:scale-[1.01] transition-transform"
+            className="inline-flex items-center gap-2 bg-linear-to-r from-indigo-600 to-pink-500 text-white px-4 py-2 rounded-xl shadow-lg hover:scale-[1.01] transition-transform"
           >
             <Plus size={16} /> Add Course
           </button>

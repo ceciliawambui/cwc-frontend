@@ -235,85 +235,9 @@ function DashboardOverview() {
     monthlyTrends: [],
   });
   const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   const fetchDashboardData = async () => {
-  //     try {
-  //       setLoading(true);
-  //       const [userRes, courseRes, topicRes] = await Promise.all([
-  //         client.get("/api/users/"),
-  //         client.get("/api/courses/"),
-  //         client.get("/api/topics/"),
-  //       ]);
-
-  //       const users = userRes.data || [];
-  //       const courses = courseRes.data || [];
-  //       const topics = topicRes.data || [];
-
-
-  //       // --- Totals ---
-  //       const totalUsers = users.length;
-  //       const totalTopics = topics.length;
-  //       const totalAdmins = users.filter((u) => u.role === "admin" || u.is_staff).length;
-  //       const totalCourses = courses.length;
-
-  //       // --- Weekly Activity (Mocked for Display) ---
-  //       const weeklyActivity = Array.from({ length: 7 }).map((_, i) => ({
-  //         day: `Day ${i + 1}`,
-  //         users: Math.floor(Math.random() * 200) + 50,
-  //         courses: Math.floor(Math.random() * 50) + 10,
-  //         topics: Math.floor(Math.random() * 80) + 20,
-  //       }));
-
-  //       // --- Monthly Trends (based on created_at) ---
-  //       const months = [
-  //         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  //         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  //       ];
-
-  //       const userMonthCount = Array(12).fill(0);
-  //       const courseMonthCount = Array(12).fill(0);
-
-  //       users.forEach((u) => {
-  //         const date = new Date(u.created_at);
-  //         if (!isNaN(date)) userMonthCount[date.getMonth()]++;
-  //       });
-
-  //       courses.forEach((c) => {
-  //         const date = new Date(c.created_at);
-  //         if (!isNaN(date)) courseMonthCount[date.getMonth()]++;
-  //       });
-
-  //       const monthlyTrends = months.map((m, i) => ({
-  //         month: m,
-  //         users: userMonthCount[i],
-  //         courses: courseMonthCount[i],
-  //       }));
-
-  //       setStats({
-  //         totalUsers,
-  //         totalAdmins,
-  //         totalCourses,
-  //         totalTopics,
-  //         recentUsers: users.slice(0, 5),
-  //         recentCourses: courses.slice(0, 5),
-  //         recentTopics: topics.slice(0, 5),
-  //         weeklyActivity,
-  //         monthlyTrends,
-  //       });
-  //     } catch (err) {
-  //       console.error(err);
-  //       toast.error("Failed to load analytics.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchDashboardData();
-  // }, []);
   useEffect(() => {
     const fetchStats = async () => {
-      const BASE_URL = "http://localhost:8000";
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       try {
         const res = await fetch(`${BASE_URL}/dashboard/stats/`);
         const data = await res.json();
@@ -367,12 +291,6 @@ function DashboardOverview() {
               value={stats.totalUsers}
               description="Registered on the platform"
             />
-            {/* <DashboardCard
-              icon={<ShieldCheck className="w-7 h-7" />}
-              title="Admins"
-              value={stats.totalAdmins}
-              description="Administrative accounts"
-            /> */}
             <DashboardCard
               icon={<BookOpen className="w-7 h-7" />}
               title="Courses"

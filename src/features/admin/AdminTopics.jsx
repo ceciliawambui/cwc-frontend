@@ -8,7 +8,7 @@ import {
   RotateCcw, AlignLeft, AlignCenter, AlignRight, Eye, Play, Database
 } from "lucide-react";
 import toast from "react-hot-toast";
-import client from "../../features/auth/api"; // adjust if needed
+import client from "../../features/auth/api"; 
 
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";

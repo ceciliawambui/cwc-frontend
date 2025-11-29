@@ -4,7 +4,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Send, Loader2, Mic, MicOff } from "lucide-react";
 
-const BASE_URL = "http://127.0.0.1:8000/";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function Chatbot() {
   const [messages, setMessages] = useState(() => {
@@ -35,7 +35,7 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      const res = await axios.get(`${BASE_URL}api/semantic-search/`, {
+      const res = await axios.get(`${BASE_URL}/api/semantic-search/`, {
         params: { q: query },
       });
 
@@ -85,9 +85,7 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Floating Button */}
       <div className="fixed bottom-6 right-6 flex flex-col items-end z-50">
-        {/* Tooltip / intro bubble */}
         <AnimatePresence>
           {showTooltip && !open && (
             <motion.div
@@ -175,7 +173,7 @@ export default function Chatbot() {
                     <div
                       className={`max-w-[80%] px-4 py-2 rounded-2xl shadow-sm text-sm ${
                         msg.sender === "user"
-                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                          ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white"
                           : "bg-gray-100/70 dark:bg-gray-800/70 text-gray-900 dark:text-gray-100"
                       }`}
                     >
