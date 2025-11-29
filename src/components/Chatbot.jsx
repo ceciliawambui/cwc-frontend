@@ -98,7 +98,7 @@ export default function Chatbot() {
               className="mb-3 w-60 p-3 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm"
             >
               <p className="font-semibold mb-1">
-                Hi 👋 I'm <span className="text-indigo-500">Nova - Knowledge Hub AI Assistant</span>!
+                Hi 👋 I'm <span className="text-indigo-500">Nova - DevHaven AI Assistant</span>!
               </p>
               <p className="text-xs">
                 Ask me anything about topics or any resources you would want.

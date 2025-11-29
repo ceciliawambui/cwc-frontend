@@ -624,7 +624,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ArrowUp, Copy } from "lucide-react";
+import { ArrowUp, Copy, Divide } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
 import toast from "react-hot-toast";
 
@@ -635,6 +635,8 @@ import cssLang from "highlight.js/lib/languages/css";
 import python from "highlight.js/lib/languages/python";
 import bash from "highlight.js/lib/languages/bash";
 import jsonLang from "highlight.js/lib/languages/json";
+// import Markdown from "react-markdown";
+import ReactMarkdown from "react-markdown";
 
 // Highlight.js themes
 import "highlight.js/styles/github.css";               // Light mode
@@ -706,6 +708,9 @@ export default function TopicDetail() {
   const [toc, setToc] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTop, setShowTop] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [summLoading, setSummLoading] = useState(false);
+
 
   // ======================================================
   // FETCH TOPIC
@@ -755,7 +760,7 @@ export default function TopicDetail() {
     };
   }, [slug]);
 
-//  fetch recommended topics
+  //  fetch recommended topics
 
   useEffect(() => {
     if (topic?.id) {
@@ -765,6 +770,28 @@ export default function TopicDetail() {
         .catch(() => setRecommended([]));
     }
   }, [topic]);
+
+  const handleSummarize = async () => {
+    if (!topic?.content) return;
+
+    try {
+      setSummLoading(true);
+      setSummary("");
+
+      const res = await axios.post(`${BASE_URL}/api/ai/summarize/`, {
+        title: topic.title,
+        content: topic.content,
+      });
+
+      setSummary(res.data.summary);
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to summarize right now");
+    } finally {
+      setSummLoading(false);
+    }
+  };
+
 
 
   // ======================================================
@@ -919,6 +946,36 @@ export default function TopicDetail() {
           >
             {topic.title}
           </motion.h1>
+          {/* AI SUMMARIZER */}
+          <div className="mt-6">
+            <button
+              onClick={handleSummarize}
+              disabled={summLoading}
+              className={`px-4 py-2 rounded-lg font-medium shadow-md 
+      ${theme === "dark"
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                }`}
+            >
+              {summLoading ? "Summarizing…" : "Summarize with AI"}
+            </button>
+
+            {summary && (
+              <div
+                className={`mt-4 border rounded-xl p-4 leading-relaxed shadow-sm ${theme === "dark"
+                  ? "bg-gray-900 border-gray-700 text-gray-200"
+                  : "bg-white border-gray-200 text-gray-800"
+                  }`}
+              >
+                <h3 className="font-semibold text-lg mb-2">AI Summary</h3>
+                {/* <p className="whitespace-pre-line">{summary}</p> */}
+                <div className="prose dark:prose-invert">
+                  {summary}
+                </div>
+              </div>
+            )}
+          </div>
+
 
           {topic.description && (
             <p
@@ -1018,11 +1075,11 @@ export default function TopicDetail() {
           >
             Recommended Topics
           </h3>
-      
+
           {recommended.length === 0 ? (
             <p className="italic text-gray-500">No recommendations available.</p>
           ) : (
-            <div  className={`block w-full text-left text-sm ${theme === "dark"
+            <div className={`block w-full text-left text-sm ${theme === "dark"
               ? "text-gray-200 hover:text-indigo-300"
               : "text-gray-700 hover:text-indigo-600"
               }`}>

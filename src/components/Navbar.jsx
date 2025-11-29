@@ -26,11 +26,11 @@ export default function Navbar() {
           {/* LOGO */}
           <Link
             to="/"
-            className="text-2xl font-bold tracking-tight bg-gradient-to-r 
+            className="text-4xl font-bold tracking-tight bg-linear-to-r 
               from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent 
               hover:opacity-90 transition-opacity"
           >
-            Knowledge Hub
+            DevHaven
           </Link>
 
           {/* Desktop Links */}
@@ -43,19 +43,11 @@ export default function Navbar() {
             {/* Support Button */}
             <button
               onClick={() => setShowSupport(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white 
+              className="flex items-center gap-2 bg-linear-to-r from-pink-500 to-purple-500 text-white 
                 px-4 py-2 rounded-full shadow hover:opacity-90 transition-all duration-300"
             >
               <Coffee size={16} /> Support
             </button>
-            {/* <button
-              onClick={() => window.dispatchEvent(new Event("open-chat"))}
-              className="flex items-center gap-1 bg-linear-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition"
-              title="Ask AI to find the right topic"
-            >
-              <Sparkles size={16} /> <span>Ask AI</span>
-            </button> */}
-
 
             {/* Theme Toggle */}
             <button
@@ -96,7 +88,7 @@ export default function Navbar() {
                   setShowSupport(true);
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white 
+                className="flex items-center gap-2 bg-linear-to-r from-pink-500 to-purple-500 text-white 
                   px-4 py-2 rounded-full shadow hover:opacity-90 transition-all duration-300"
               >
                 <Coffee size={16} /> Support
@@ -134,12 +126,12 @@ function NavLink({ to, label }) {
       className={`relative text-[15px] font-medium transition-colors
         ${isActive
           ? "text-indigo-600 dark:text-pink-400"
-          : "text-gray-700 dark:text-white hover:text-indigo-500 dark:hover:text-pink-400"
+          : "dark:text-white hover:text-indigo-500 dark:hover:text-pink-400"
         }`}
     >
       {label}
       {isActive && (
-        <span className="absolute -bottom-1 left-0 w-full h-[2.5px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+        <span className="absolute -bottom-1 left-0 w-full h-[2.5px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
       )}
     </Link>
   );

@@ -121,7 +121,7 @@ function Sidebar({
     >
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-800">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Knowledge Hub
+          DevHaven
         </h2>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -176,7 +176,7 @@ function TopBar({ sidebarOpen, setSidebarOpen, user }) {
           <Menu className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          Knowledge Hub Admin Panel
+          DevHaven Admin Panel
         </h1>
       </div>
 
@@ -713,7 +713,7 @@ function SettingsPanel() {
         </label>
         <input
           type="text"
-          defaultValue="Knowledge Hub"
+          defaultValue="TechFlare"
           className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>

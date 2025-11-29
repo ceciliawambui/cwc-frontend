@@ -153,7 +153,7 @@ export default function CourseDetail() {
             }`}
           >
             {course.description ||
-              "Dive into an immersive knowledge hub filled with practical lessons, deep insights, and technical guides that grow with you."}
+              "Dive into an immersive DevHaven filled with practical lessons, deep insights, and technical guides that grow with you."}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-6 text-sm">

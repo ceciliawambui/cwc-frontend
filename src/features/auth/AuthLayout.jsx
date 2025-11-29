@@ -13,10 +13,6 @@ export default function AuthLayout({ title, subtitle, children }) {
     >
       <AnimatedBackground />
 
-      {/* <div className="absolute top-6 right-6 z-20">
-        <ThemeToggle />
-      </div> */}
-
       <div className="container mx-auto px-6 z-10">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20">
           <motion.div
@@ -26,14 +22,14 @@ export default function AuthLayout({ title, subtitle, children }) {
             className="flex-1 text-center lg:text-left"
           >
             <h1 className="text-5xl sm:text-6xl font-extrabold gradient-text mb-4">
-              Knowledge Hub
+              DevHaven
             </h1>
 
             <p
               className="max-w-lg mx-auto lg:mx-0 leading-relaxed transition-colors"
             >
               {subtitle ||
-                "Explore structured tutorials, notes, and visual examples across modern technologies."}
+                "A modern space where developers of all levels come to learn, sharpen their skills, and stay ahead. Explore curated topics, practical tutorials, and real-world learning paths designed to help you grow with confidence."}
             </p>
 
             <motion.div

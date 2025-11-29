@@ -58,7 +58,7 @@ export default function CoursesPage() {
     if (key.includes("vue")) return "https://cdn.simpleicons.org/vuedotjs";
 
     // Default fallback
-    return "https://cdn.simpleicons.org/code";
+    return "https://cdn.simpleicons.org/codepen";
   };
 
   return (

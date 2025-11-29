@@ -47,15 +47,17 @@ export default function LandingPage() {
     <div className={`min-h-screen flex flex-col overflow-hidden transition-colors duration-500 ${bgPrimary}`}>
       <section className="relative container mx-auto px-6 pt-28 pb-20 grid md:grid-cols-2 gap-10 items-center">
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className={`text-3xl md:text-5xl font-extrabold leading-tight ${textPrimary}`}>
-            Explore. Learn. Build. <br />
+          <h1 className={`text-5xl md:text-5xl font-extrabold leading-tight ${textPrimary}`}>
+            {/* Explore. Learn. Build. <br /> */}
+            Your Safe Space <br />
             <span className="bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Evolve with Knowledge Hub.
+            for Tech Mastery.
             </span>
           </h1>
           <p className={`mt-6 text-base leading-relaxed max-w-lg ${textSecondary}`}>
-            A modern space for developers, designers, and learners.
-            Discover structured paths, curated topics, and community insights that keep you at the edge of tech innovation.
+          DevHaven is a modern space where developers of all levels come to learn, 
+  sharpen their skills, and stay ahead. Explore curated topics, practical 
+  tutorials, and real-world learning paths designed to help you grow with confidence.
           </p>
 
           <div className="mt-8 flex gap-4">
@@ -95,14 +97,13 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ---------------- WHY KNOWLEDGE HUB ---------------- */}
       <section className="py-20 border-t border-white/10 container mx-auto px-6">
         <motion.h2
           className={`text-3xl font-bold mb-14 text-center ${textPrimary}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          Why Knowledge Hub?
+          Why DevHaven?
         </motion.h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -159,7 +160,6 @@ export default function LandingPage() {
       </section>
 
       {/* ---------------- FEATURED COURSES ---------------- */}
-      {/* ---------------- FEATURED COURSES ---------------- */}
       <section className="py-20 border-t border-white/10 container mx-auto px-6">
         <motion.h2
           className={`text-3xl font-bold mb-12 text-center ${textPrimary}`}
@@ -191,7 +191,7 @@ export default function LandingPage() {
                 if (key.includes("typescript")) return "https://cdn.simpleicons.org/typescript";
                 if (key.includes("vue")) return "https://cdn.simpleicons.org/vuedotjs";
                 if (key.includes("php")) return "https://cdn.simpleicons.org/php";
-                return "https://cdn.simpleicons.org/code";
+                return "https://cdn.simpleicons.org/codepen";
               };
 
               return (
@@ -316,7 +316,7 @@ export default function LandingPage() {
           <h2 className={`text-4xl font-bold mb-6 ${textPrimary}`}>Join Our Learning Community</h2>
           <p className={`max-w-2xl mx-auto mb-8 ${textSecondary}`}>
             Be part of a growing ecosystem where developers share, build, and grow together.
-            Let’s shape the future of tech education — one project at a time.
+            Let’s shape the future of tech education, one project at a time.
           </p>
           <Link
             to="/register"
