@@ -288,7 +288,7 @@ export default function AdminCourses() {
                   className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-md border border-gray-100 dark:border-gray-800"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border">
+                    <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 border">
                       {course.thumbnail ? (
                         <img
                           className="w-full h-full object-cover"

@@ -129,7 +129,7 @@ export default function Chatbot() {
             className="fixed bottom-24 right-6 w-96 max-h-[75vh] bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/40 dark:border-gray-700/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 text-white">
+            <div className="flex items-center justify-between px-4 py-3 bg-linear-to-r from-indigo-600/90 to-purple-600/90 text-white">
               <div className="flex items-center gap-2">
                 <Sparkles className="text-white" size={18} />
                 <h3 className="text-sm font-semibold">Nova — Your Knowledge Assistant</h3>
