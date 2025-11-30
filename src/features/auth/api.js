@@ -29,7 +29,7 @@ client.interceptors.response.use(
 
       if (refresh) {
         try {
-          const { data } = await axios.post(`${API_BASE}/token/refresh/`, {
+          const { data } = await axios.post("https://devhaven.onrender.com/token/refresh/", {
             refresh,
           });
           const updatedAuth = { ...auth, access: data.access };
@@ -40,7 +40,7 @@ client.interceptors.response.use(
           console.error("Token refresh failed:", refreshErr);
           localStorage.removeItem("auth");
           localStorage.removeItem("user");
-          window.location.href = "/login";
+          window.location.href = "https://devhaven.onrender.com/login";
         }
       }
     }
@@ -49,11 +49,11 @@ client.interceptors.response.use(
 );
 
 export async function loginRequest({ email, password }) {
-  return client.post(`${API_BASE}/login/`, { username: email, password });
+  return client.post("https://devhaven.onrender.com/login/", { username: email, password });
 }
 
 export async function registerRequest(payload) {
-  return client.post(`${API_BASE}/register/`, payload);
+  return client.post("https://devhaven.onrender.com/register/", payload);
 }
 
 export default client;
