@@ -29,6 +29,8 @@ export default function LandingPage() {
           axios.get(`${BASE_URL}/api/courses/`),
           axios.get(`${BASE_URL}/api/topics/`),
         ]);
+        console.log("COURSES:", courseRes.data);
+        console.log("TOPICS:", topicRes.data);
         setCourses(courseRes.data.slice(0, 3));
         setTopics(topicRes.data.slice(0, 6));
       } catch (err) {
