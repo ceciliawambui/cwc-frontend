@@ -72,16 +72,16 @@ export default function LoginPage() {
         onSuccess={(userData) =>
           setTimeout(() => {
             if (userData.is_admin || userData.role === "admin") {
-              nav("https://devhaven.onrender.com/admin");
+              nav("/admin");
             } else {
-              nav("https://devhaven.onrender.com/");
+              nav("/");
             }
           }, 400)
         }
       />
       <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
         New here?{" "}
-        <a href="https://devhaven.onrender.com/register" className="text-indigo-500 hover:underline">
+        <a href="/register" className="text-indigo-500 hover:underline">
           Create an account
         </a>
       </p>

@@ -13,7 +13,7 @@ export default function RegisterPage() {
       />
       <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
         Already have an account?{" "}
-        <a href="https://devhaven.onrender.com/login" className="text-indigo-500 hover:underline">
+        <a href="/login" className="text-indigo-500 hover:underline">
           Sign in
         </a>
       </p>

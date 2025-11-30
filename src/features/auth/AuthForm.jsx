@@ -32,9 +32,9 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         toast.success("Welcome back!");
       
         if (loggedUser?.role === "admin" || loggedUser?.is_admin) {
-          nav("https://devhaven.onrender.com/admin");
+          nav("/admin");
         } else {
-          nav("https://devhaven.onrender.com/dashboard");
+          nav("/dashboard");
         }
 
         onSuccess?.(loggedUser);
@@ -48,6 +48,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
           username: form.email,
           email: form.email,
           password: form.password,
+          name: form.name,
         };
 
         const { registerRequest } = await import("./api");
@@ -124,7 +125,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         type="submit"
         disabled={loading}
         className="w-full py-3 mt-2 rounded-xl font-semibold text-white text-lg 
-                   bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:opacity-90 transition-all"
+                   bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:opacity-90 transition-all"
       >
         {loading ? <Loader size={20} /> : mode === "login" ? "Sign In" : "Create Account"}
       </button>
