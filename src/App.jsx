@@ -30,11 +30,10 @@ export default function App() {
   useEffect(() => {
     track(location.pathname);
   }, [location]);
-  
+
   return (
     <AuthProvider>
       <ThemeProvider> 
-        <BrowserRouter>
         <Navbar />
           <Toaster position="top-right" />
           <Routes>
@@ -55,7 +54,6 @@ export default function App() {
             />
           </Routes>
           <Footer/>
-        </BrowserRouter>
       </ThemeProvider>
       <Toaster position="top-right" />
     </AuthProvider>
