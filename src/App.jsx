@@ -13,6 +13,9 @@ import TopicDetail from "./features/content/courses/TopicDetail";
 import Navbar from "./components/Navbar";
 import CoursesPage from "./features/content/courses/CoursesPage";
 import Footer from "./components/Footer";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { track } from "@vercel/analytics";
 
 function PrivateAdmin({ children }) {
   const { user } = useAuth();
@@ -21,6 +24,13 @@ function PrivateAdmin({ children }) {
 }
 
 export default function App() {
+
+  const location = useLocation();
+
+  useEffect(() => {
+    track(location.pathname);
+  }, [location]);
+  
   return (
     <AuthProvider>
       <ThemeProvider> 
