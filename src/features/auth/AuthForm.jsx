@@ -32,9 +32,9 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         toast.success("Welcome back!");
       
         if (loggedUser?.role === "admin" || loggedUser?.is_admin) {
-          nav("/admin");
+          nav("https://devhaven.onrender.com/admin");
         } else {
-          nav("/dashboard");
+          nav("https://devhaven.onrender.com/dashboard");
         }
 
         onSuccess?.(loggedUser);
