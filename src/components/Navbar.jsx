@@ -51,6 +51,7 @@ export default function Navbar() {
 
             <NavItem to="/" label="Home" />
             <NavItem to="/courses" label="Courses" />
+            <NavItem to="/blogs" label="Blogs" />
 
             {/* If not logged in */}
             {!user && (

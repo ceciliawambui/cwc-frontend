@@ -27,10 +27,10 @@ export default function AuthForm({ mode = "login", onSuccess }) {
     try {
       if (mode === "login") {
         await login(form.email, form.password);
-      
-        const loggedUser = JSON.parse(localStorage.getItem("user")); 
+
+        const loggedUser = JSON.parse(localStorage.getItem("user"));
         toast.success("Welcome back!");
-      
+
         if (loggedUser?.role === "admin" || loggedUser?.is_admin) {
           nav("/admin");
         } else {
@@ -86,7 +86,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         />
       )}
 
-      <input
+      {/* <input
         type="email"
         name="email"
         placeholder="Email address"
@@ -95,6 +95,16 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
                    bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
                    text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
+      /> */}
+      <input
+        type="text"  // Changed from "email" to "text"
+        name="email"  // Keep the name as "email" since that's what your form uses
+        placeholder="Email or Username"  // Updated placeholder
+        value={form.email}
+        onChange={onChange}
+        className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
+             bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
+             text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
       />
 
       <input

@@ -16,6 +16,7 @@ import Footer from "./components/Footer";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { track } from "@vercel/analytics";
+import Blogs from "./features/content/Blogs";
 
 function PrivateAdmin({ children }) {
   const { user } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/courses/:id" element={<CourseDetail />} />
             <Route path="/topics/:slug" element={<TopicDetail />} />
             <Route path="/courses" element={<CoursesPage />} />
+            <Route path='/blogs' element={<Blogs />} />
 
             <Route
               path="/admin"

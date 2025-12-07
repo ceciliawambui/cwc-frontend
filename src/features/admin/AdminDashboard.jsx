@@ -473,18 +473,59 @@ function UserManagement() {
   const [updating, setUpdating] = useState(null);
 
   // --- Fetch Users ---
+  // const fetchUsers = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await client.get("/api/users/");
+  //     setUsers(res.data || []);
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error("Failed to fetch users (401 or server error).");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchUsers = async () => {
     try {
       setLoading(true);
+  
+      // --- Log the token from localStorage ---
+      const auth = JSON.parse(localStorage.getItem("auth"));
+      console.log("Stored auth object:", auth);
+  
+      if (!auth?.access) {
+        console.warn("No access token found in localStorage");
+      } else {
+        console.log("Access token exists, length:", auth.access.length);
+      }
+  
+      // --- Log the request about to be made ---
+      console.log("Making request to /api/users/ with headers:", {
+        Authorization: `Bearer ${auth?.access}`,
+      });
+  
       const res = await client.get("/api/users/");
+  
+      // --- Log the response ---
+      console.log("Response from /api/users/:", res);
       setUsers(res.data || []);
     } catch (err) {
-      console.error(err);
+      // --- Log the full error object ---
+      console.error("Error fetching users:", err);
+      if (err.response) {
+        console.error("Status:", err.response.status);
+        console.error("Response data:", err.response.data);
+        console.error("Response headers:", err.response.headers);
+      } else {
+        console.error("No response received, error:", err.message);
+      }
+  
       toast.error("Failed to fetch users (401 or server error).");
     } finally {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchUsers();
@@ -654,3 +695,60 @@ function SettingsPanel() {
   );
 }
 
+// import React, { useState } from "react";
+// // eslint-disable-next-line no-unused-vars
+// import { motion } from "framer-motion";
+// import useAuth from "../../hooks/useAuth";
+
+// import Sidebar from "./Sidebar";
+// import TopBar from "./Topbar";
+// import DashboardOverview from "./DashboardOverview";
+// import AdminCourses from "./AdminCourses";
+// import AdminTopics from "./AdminTopics";
+// import UserManagement from "./users/UserManagement";
+// import SettingsPanel from "./SettingsPanel";
+
+// export default function AdminDashboard() {
+//   const { user, logout } = useAuth();
+//   const [sidebarOpen, setSidebarOpen] = useState(false);
+//   const [activeSection, setActiveSection] = useState("Dashboard");
+
+//   const navLinks = [
+//     { name: "Dashboard", icon: "Home" },
+//     { name: "Courses", icon: "BookOpen" },
+//     { name: "Topics", icon: "Layers" },
+//     { name: "Users", icon: "Users" },
+//     { name: "Settings", icon: "Settings" },
+//   ];
+
+//   return (
+//     <div className="flex min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+
+//       <Sidebar
+//         sidebarOpen={sidebarOpen}
+//         setSidebarOpen={setSidebarOpen}
+//         navLinks={navLinks}
+//         activeSection={activeSection}
+//         setActiveSection={setActiveSection}
+//         logout={logout}
+//       />
+
+//       <div className="flex-1 flex flex-col min-h-screen">
+//         <TopBar
+//           sidebarOpen={sidebarOpen}
+//           setSidebarOpen={setSidebarOpen}
+//           user={user}
+//         />
+
+//         <main className="flex-1 px-6 py-8 md:px-10">
+//           {activeSection === "Dashboard" && <DashboardOverview />}
+//           {activeSection === "Courses" && <AdminCourses />}
+//           {activeSection === "Topics" && <AdminTopics />}
+//           {activeSection === "Users" && <UserManagement />}
+//           {activeSection === "Settings" && <SettingsPanel />}
+//         </main>
+
+//       </div>
+//     </div>
+//   );
+// }

@@ -48,11 +48,28 @@ export default function AdminCourses() {
     setLoading(true);
     try {
       const res = await client.get("/api/courses/");
-      const data = res.data || [];
+      let data = res.data;
+  
+      // Handle paginated or wrapped responses
+      if (Array.isArray(data)) {
+        // OK
+      } else if (Array.isArray(data?.results)) {
+        data = data.results;
+      } else if (Array.isArray(data?.courses)) {
+        data = data.courses;
+      } else {
+        console.error("Unexpected courses response:", res.data);
+        toast.error("Invalid response format from server.");
+        setCourses([]);
+        setFiltered([]);
+        return;
+      }
+  
       setCourses(data);
       setFiltered(data);
       computeAnalytics(data);
       setPage(1);
+  
     } catch (err) {
       console.error("Failed to load courses:", err);
       toast.error("Failed to load courses.");
@@ -60,6 +77,7 @@ export default function AdminCourses() {
       setLoading(false);
     }
   }
+  
 
   function computeAnalytics(data) {
     const weekAgo = new Date();
