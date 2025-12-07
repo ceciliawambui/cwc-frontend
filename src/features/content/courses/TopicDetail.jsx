@@ -467,12 +467,11 @@
 //     </div>
 //   );
 // }
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { FiClock, FiCopy, FiCheck, FiBook, FiVideo, FiArrowLeft } from "react-icons/fi";
-import { useTheme } from "../../../context/ThemeContext";
 import toast from "react-hot-toast";
 import client from "../../auth/api";
 
@@ -480,155 +479,108 @@ import hljs from "highlight.js";
 import "highlight.js/styles/atom-one-dark.css";
 
 import DOMPurify from "dompurify";
-import parse, { domToReact, Element } from "html-react-parser";
+import parse, { Element } from "html-react-parser";
 
-/* ==========================================================================
-   HELPER: HTML DECODER
-   ========================================================================== */
-// This turns "&lt;p&gt;" back into "<p>" so the browser renders it as a paragraph
+// 1. Helper: Decode HTML Entities
 function decodeHtml(html) {
+  if (!html) return "";
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
 }
 
-/* ==========================================================================
-   HTML CLEANER & NORMALIZER
-   ========================================================================== */
-
-function normalizeHtml(html) {
-  if (!html) return "";
-
-  // 1. DECODE THE HTML (Fixes your specific screenshot issue)
-  // We decode once to turn the escaped string back into renderable HTML
-  let cleaned = decodeHtml(html);
-
-  // 2. Remove outer <b> wrappers if the whole doc is bold
-  if (/^\s*<b>[\s\S]*<\/b>\s*$/i.test(cleaned)) {
-    cleaned = cleaned.replace(/^\s*<b>/i, "").replace(/<\/b>\s*$/i, "");
+// 2. Helper: Recursive Text Extractor
+function extractTextFromDomNode(node) {
+  if (!node) return "";
+  if (node.type === "text") return node.data;
+  if (node.children && node.children.length > 0) {
+    return node.children.map(extractTextFromDomNode).join("");
   }
-
-  // 3. Remove <b> tags that wrap block elements
-  cleaned = cleaned.replace(/<b>\s*(<(?:p|h[1-6]|ul|ol|div|li)[^>]*>)/gi, "$1");
-  cleaned = cleaned.replace(/(<\/(?:p|h[1-6]|ul|ol|div|li)>)\s*<\/b>/gi, "$1");
-
-  // 4. Clean Google Docs/Word garbage
-  cleaned = cleaned.replace(/<span[^>]*?>/gi, "");
-  cleaned = cleaned.replace(/<\/span>/gi, "");
-  
-  // 5. Cleanup empty paragraphs
-  cleaned = cleaned.replace(/<p>\s*<\/p>/gi, "");
-  
-  // 6. Metadata stripping
-  cleaned = cleaned.replace(/<meta[^>]*>/gi, "");
-
-  return cleaned;
+  return "";
 }
 
-/* ==========================================================================
-   HEADINGS: ID Injection for TOC
-   ========================================================================== */
+// 3. Helper: Clean Indentation (non-breaking spaces)
+function cleanCodeString(rawString) {
+  if (!rawString) return "";
+  return rawString.replace(/\u00A0/g, " ").replace(/&nbsp;/g, " ");
+}
 
+// 4. Helper: Inject IDs for TOC
 function injectHeadingIDs(html) {
+  if (!html) return "";
   const temp = document.createElement("div");
   temp.innerHTML = html;
-
   const headings = temp.querySelectorAll("h2, h3");
-
-  headings.forEach((h, index) => {
-    const id = h.textContent
+  headings.forEach((h, idx) => {
+    const id = (h.textContent || "")
       .toLowerCase()
+      .trim()
       .replace(/\s+/g, "-")
-      .replace(/[^\w-]/g, "") + "-" + index;
+      .replace(/[^\w-]/g, "") + "-" + idx;
     h.setAttribute("id", id);
   });
-
   return temp.innerHTML;
 }
 
-/* ==========================================================================
-   SANITIZER
-   ========================================================================== */
-
-function safeSanitize(html) {
-  // We allow specific attributes to ensure code highlighting classes pass through
-  return DOMPurify.sanitize(html, {
-    USE_PROFILES: { html: true },
-    KEEP_CONTENT: true,
-    ALLOWED_TAGS: [
-      "p", "strong", "em", "u", "i", "b", "s",
-      "h1", "h2", "h3", "h4", "h5", "h6",
-      "ul", "ol", "li",
-      "pre", "code", "br", "hr",
-      "table", "thead", "tbody", "tr", "th", "td",
-      "blockquote",
-      "div", "span", "a", "img"
-    ],
-    ALLOWED_ATTR: ["id", "class", "href", "src", "alt", "target", "style"]
-  });
-}
-
-function cleanHtmlPipeline(html) {
-  let out = normalizeHtml(html);
-  out = injectHeadingIDs(out);
-  out = safeSanitize(out);
-  return out;
-}
-
-/* ==========================================================================
-   CUSTOM CODE BLOCK COMPONENT
-   ========================================================================== */
-
-const CodeBlock = ({ language, code }) => {
+// 5. Component: CodeBlock
+const CodeBlock = ({ code, language }) => {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef(null);
 
   useEffect(() => {
-    if (codeRef.current) {
-      codeRef.current.removeAttribute('data-highlighted');
-      hljs.highlightElement(codeRef.current);
+    if (codeRef.current && code) {
+      // If language is provided (e.g. 'python'), use it. Else auto-detect.
+      // We strip 'language-' prefix if it exists
+      const cleanLang = language ? language.replace('language-', '') : null;
+      
+      try {
+        const result = cleanLang && hljs.getLanguage(cleanLang)
+          ? hljs.highlight(code, { language: cleanLang })
+          : hljs.highlightAuto(code);
+          
+        codeRef.current.innerHTML = result.value;
+        codeRef.current.classList.add(`language-${result.language}`);
+      } catch (e) {
+        console.error("Highlighting error:", e);
+        // Fallback if language not found
+        const result = hljs.highlightAuto(code);
+        codeRef.current.innerHTML = result.value;
+      }
     }
   }, [code, language]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    toast.success("Code copied!");
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success("Code copied!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy", err);
+    }
   };
 
-  const langLabel = language ? language.replace("language-", "") : "text";
-
   return (
-    <div className="my-6 rounded-xl overflow-hidden bg-[#282c34] shadow-2xl border border-gray-700/50 group text-left">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#21252b] border-b border-gray-700/50">
+    <div className="my-6 rounded-xl overflow-hidden bg-[#1e1e1e] shadow-2xl border border-gray-700/50 group text-left">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-gray-700">
         <div className="flex gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500/80" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-          <div className="w-3 h-3 rounded-full bg-green-500/80" />
+          <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+          <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+          <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-400 font-mono uppercase tracking-wider select-none">
-            {langLabel}
-          </span>
-          <button
+        <div className="flex items-center gap-3">
+            {language && <span className="text-xs text-gray-500 uppercase font-mono">{language.replace('language-', '')}</span>}
+            <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
-            title="Copy Code"
-          >
+            className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-2 py-1 rounded"
+            >
             {copied ? <FiCheck className="text-green-400" size={14} /> : <FiCopy size={14} />}
-          </button>
+            </button>
         </div>
       </div>
-      
-      {/* Code Body */}
       <div className="relative">
         <pre className="!m-0 !p-4 !bg-transparent overflow-x-auto">
-          <code
-            ref={codeRef}
-            className={`!font-mono !text-sm !leading-relaxed ${language || 'language-text'}`}
-          >
+          <code ref={codeRef} className="font-mono text-sm leading-relaxed text-gray-300">
             {code}
           </code>
         </pre>
@@ -637,77 +589,88 @@ const CodeBlock = ({ language, code }) => {
   );
 };
 
-/* ==========================================================================
-   CONTENT RENDERER
-   ========================================================================== */
-
+// 6. Component: ContentRenderer (The Parsing Logic)
 const ContentRenderer = ({ htmlContent }) => {
-  const cleanedHtml = useMemo(() => cleanHtmlPipeline(htmlContent), [htmlContent]);
+  
+  const processedHtml = useMemo(() => {
+    if (!htmlContent) return "";
+    
+    // A. Decode Entities
+    let decoded = decodeHtml(htmlContent);
+
+    // B. MERGE ADJACENT CODE BLOCKS (The Fix for fragmented lines)
+    // This regex looks for: </code></pre> followed by <pre ...><code ...>
+    // It replaces the boundary with a newline, effectively merging them into one block.
+    // We use a general regex to catch various attributes TipTap might add.
+    decoded = decoded.replace(/<\/code>\s*<\/pre>\s*<pre[^>]*>\s*<code[^>]*>/gi, "\n");
+    
+    // Fallback for pre tags without code tags (older data)
+    decoded = decoded.replace(/<\/pre>\s*<pre[^>]*>/gi, "\n");
+
+    // C. Sanitize
+    const clean = DOMPurify.sanitize(decoded, {
+      USE_PROFILES: { html: true },
+      ADD_TAGS: ["iframe", "img"],
+      ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "src", "alt", "class", "id", "style"]
+    });
+
+    // D. Add IDs
+    return injectHeadingIDs(clean);
+  }, [htmlContent]);
 
   const options = {
     replace: (domNode) => {
-      // 1. Handle Code Blocks (<pre><code>...)
+      // Find <pre> blocks
       if (domNode instanceof Element && domNode.name === "pre") {
-        const codeNode = domNode.children.find((child) => child.name === "code");
         
-        if (codeNode) {
-          const className = codeNode.attribs?.class || "";
-          
-          // Helper to recursively get text content from children
-          const getCodeText = (node) => {
-            if (node.type === "text") return node.data;
-            if (node.children) return node.children.map(getCodeText).join("");
-            return "";
-          };
-          
-          const codeText = getCodeText(codeNode);
-          return <CodeBlock language={className} code={codeText} />;
+        // 1. Detect Language Class (e.g. from <code class="language-python">)
+        let language = null;
+        if (domNode.children && domNode.children.length > 0) {
+            const child = domNode.children[0];
+            if (child.name === 'code' && child.attribs && child.attribs.class) {
+                language = child.attribs.class; // e.g., "language-python"
+            }
         }
+
+        // 2. Extract & Clean Text
+        let rawCode = extractTextFromDomNode(domNode);
+        rawCode = cleanCodeString(rawCode);
+
+        if (!rawCode.trim()) return;
+
+        // 3. Render Custom Block
+        return <CodeBlock code={rawCode} language={language} />;
       }
 
-      // 2. Handle Inline Code (e.g. "Use the <span> tag")
-      // We explicitly style <code> tags that are NOT inside <pre>
-      if (domNode instanceof Element && domNode.name === "code") {
-         // If parent is NOT pre (already handled above), style it as inline code
-         if (domNode.parent && domNode.parent.name !== "pre") {
-            return (
-                <code className="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded font-mono text-sm border border-gray-200 dark:border-gray-700">
-                    {domToReact(domNode.children)}
-                </code>
-            );
-         }
+      if (domNode instanceof Element && domNode.name === 'img') {
+          return <img 
+              src={domNode.attribs.src} 
+              alt={domNode.attribs.alt || ''} 
+              className="rounded-xl shadow-lg my-6 max-w-full h-auto" 
+          />;
       }
     },
   };
 
   return (
-    <div
-      className="
-        prose prose-lg max-w-none
-        dark:prose-invert
-        prose-headings:font-bold prose-headings:tracking-tight
-        prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
-        prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
-        prose-p:leading-loose prose-p:text-gray-600 dark:prose-p:text-gray-300
-        prose-li:text-gray-600 dark:prose-li:text-gray-300
-        prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400
-        prose-img:rounded-xl prose-img:shadow-lg
-        /* Hide default prose code styling to use our custom inline one */
-        prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:before:content-none prose-code:after:content-none
-      "
-    >
-      {parse(cleanedHtml, options)}
+    <div className="
+      prose prose-lg max-w-none w-full dark:prose-invert
+      prose-headings:font-bold prose-headings:tracking-tight
+      prose-p:leading-relaxed prose-p:text-gray-600 dark:prose-p:text-gray-300
+      prose-li:text-gray-600 dark:prose-li:text-gray-300
+      prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400
+      prose-pre:bg-transparent prose-pre:m-0 prose-pre:p-0
+    ">
+      {parse(processedHtml, options)}
     </div>
   );
 };
 
 /* ==========================================================================
-   MAIN TOPIC DETAIL COMPONENT
+   COMPONENT: TableOfContents
    ========================================================================== */
-
 const TableOfContents = React.memo(({ toc, activeId }) => {
-  if (toc.length === 0) return null;
-
+  if (!toc || toc.length === 0) return null;
   return (
     <div className="sticky top-24">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
@@ -721,7 +684,7 @@ const TableOfContents = React.memo(({ toc, activeId }) => {
               href={`#${item.id}`}
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
               }}
               className={`block text-sm py-2 px-3 rounded-lg transition-all ${
                 activeId === item.id
@@ -737,11 +700,13 @@ const TableOfContents = React.memo(({ toc, activeId }) => {
     </div>
   );
 });
-TableOfContents.displayName = 'TableOfContents';
+TableOfContents.displayName = "TableOfContents";
 
+/* ==========================================================================
+   MAIN PAGE: TopicDetail
+   ========================================================================== */
 export default function TopicDetail() {
   const { slug } = useParams();
-  const { theme } = useTheme();
   const [topic, setTopic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState("");
@@ -753,9 +718,9 @@ export default function TopicDetail() {
       try {
         const res = await client.get(`/api/topics/slug/${slug}/`);
         if (mounted) setTopic(res.data);
-      } catch (error) {
-        console.error("Error fetching topic", error);
-        if (mounted) toast.error("Failed to load topic");
+      } catch (err) {
+        console.error("Failed to fetch topic:", err);
+        toast.error("Failed to load topic");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -764,8 +729,8 @@ export default function TopicDetail() {
     return () => { mounted = false; };
   }, [slug]);
 
-  // Scroll spy
   useEffect(() => {
+    if (!topic) return;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -774,21 +739,18 @@ export default function TopicDetail() {
       },
       { rootMargin: "0px 0px -80% 0px" }
     );
-    const headings = document.querySelectorAll("h2, h3");
-    headings.forEach((h) => observer.observe(h));
+    const heads = document.querySelectorAll("h2[id], h3[id]");
+    heads.forEach((h) => observer.observe(h));
     return () => observer.disconnect();
   }, [topic]);
 
-  // Generate TOC
   const toc = useMemo(() => {
     if (!topic?.content_html) return [];
-    // Decode first to ensure we find headings even if escaped
-    const decoded = decodeHtml(topic.content_html); 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(decoded, "text/html");
-    const headings = doc.querySelectorAll("h2, h3");
+    const temp = document.createElement("div");
+    temp.innerHTML = decodeHtml(topic.content_html);
+    const headings = temp.querySelectorAll("h2, h3");
     return Array.from(headings).map((h, idx) => ({
-      id: h.textContent.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "") + `-${idx}`,
+      id: (h.textContent || "").toLowerCase().trim().replace(/\s+/g, "-").replace(/[^\w-]/g, "") + "-" + idx,
       text: h.textContent,
       level: h.tagName === "H2" ? 2 : 3,
     }));
@@ -812,30 +774,40 @@ export default function TopicDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-             <p className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Topic not found</p>
-             <Link to="/topics" className="text-indigo-600 hover:underline">Go back</Link>
+          <p className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Topic not found</p>
+          <Link to="/topics" className="text-indigo-600 hover:underline">Go back</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}>
-      {/* Hero Header */}
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10" />
-        <div className="max-w-7xl mx-auto px-6 py-16 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
-            <Link to="/topics" className="inline-flex items-center gap-2 text-indigo-100 hover:text-white text-sm font-medium w-fit">
+        <div className="max-w-[1400px] mx-auto px-6 py-16 relative z-10 w-full">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Link to="/topics" className="inline-flex items-center gap-2 text-indigo-100 hover:text-white text-sm font-medium w-fit mb-6 transition-colors">
               <FiArrowLeft /> Back to Topics
             </Link>
-            <span className="inline-flex items-center gap-2 text-indigo-100 font-medium text-xs tracking-wider uppercase bg-white/10 w-fit px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20">
-              <FiBook /> {topic.course_detail?.title || "Course Topic"}
-            </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">{topic.title}</h1>
-            {topic.description && <p className="text-lg text-indigo-100 max-w-3xl leading-relaxed">{topic.description}</p>}
             
-            <div className="flex items-center gap-4 mt-2 text-sm text-indigo-200">
+            {topic.course_detail?.title && (
+              <span className="inline-flex items-center gap-2 text-indigo-100 font-medium text-xs tracking-wider uppercase bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                <FiBook /> {topic.course_detail.title}
+              </span>
+            )}
+            
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mt-6 mb-4">
+              {topic.title}
+            </h1>
+            
+            {topic.description && (
+              <p className="text-lg text-indigo-100 max-w-3xl leading-relaxed">
+                {topic.description}
+              </p>
+            )}
+            
+            <div className="flex items-center gap-4 mt-6 text-sm text-indigo-200">
               <span className="flex items-center gap-2">
                 <FiClock /> {topic.created_at ? new Date(topic.created_at).toLocaleDateString() : "Recently"}
               </span>
@@ -844,28 +816,37 @@ export default function TopicDetail() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-8">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 w-full">
+        <div className="lg:col-span-8 w-full">
           {topic.content_html ? (
             <ContentRenderer htmlContent={topic.content_html} />
           ) : (
-            <div className="text-center py-20 text-gray-500">No content available.</div>
+            <div className="text-center py-20 text-gray-500 dark:text-gray-400 italic">
+              No content available for this topic.
+            </div>
           )}
 
           {videoEmbedUrl && (
-            <div className="mt-16 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold flex items-center gap-3 mb-6"><FiVideo className="text-indigo-600" /> Video Lesson</h3>
-              <div className="aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
-                <iframe src={videoEmbedUrl} className="w-full h-full" title="Video Lesson" allowFullScreen />
+            <div className="mt-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 md:p-8 shadow-sm">
+              <h3 className="text-2xl font-bold flex items-center gap-3 mb-6 text-gray-900 dark:text-gray-100">
+                <FiVideo className="text-indigo-600" /> Video Lesson
+              </h3>
+              <div className="aspect-video rounded-xl overflow-hidden shadow-lg bg-black">
+                <iframe 
+                  src={videoEmbedUrl} 
+                  className="w-full h-full" 
+                  title="Video Lesson" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen 
+                />
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
 
-        <motion.aside initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-4 hidden lg:block">
+        <aside className="lg:col-span-4 hidden lg:block">
           <TableOfContents toc={toc} activeId={activeId} />
-        </motion.aside>
+        </aside>
       </div>
     </div>
   );

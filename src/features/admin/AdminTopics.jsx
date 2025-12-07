@@ -1693,208 +1693,575 @@ import client from "../../features/auth/api"; // Ensure this path is correct
 // }
 /* eslint-disable react-hooks/exhaustive-deps */
 // import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  FiEdit,
-  FiTrash2,
-  FiPlus,
-  FiSave,
-  FiCode,
-  FiBold,
-  FiItalic,
-  FiX,
-} from "react-icons/fi";
+// import {
+//   FiEdit,
+//   FiTrash2,
+//   FiPlus,
+//   FiSave,
+//   FiCode,
+//   FiBold,
+//   FiItalic,
+//   FiX,
+// } from "react-icons/fi";
+// // import toast from "react-hot-toast";
+// // import client from "../../features/auth/api"; // <-- your configured axios instance
+
+// /* ==========================================================================
+//    Helpers: safe DOM update to avoid blocking main thread
+//    ========================================================================== */
+// function safeSetInnerHTML(element, html) {
+//   if (!element) return;
+//   const update = () => {
+//     if (element.innerHTML !== html) {
+//       element.innerHTML = html || "";
+//     }
+//   };
+//   if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+//     window.requestIdleCallback(() => requestAnimationFrame(update), { timeout: 200 });
+//   } else {
+//     setTimeout(() => requestAnimationFrame(update), 30);
+//   }
+// }
+
+// /* ==========================================================================
+//    SimpleEditor - contentEditable, supports paste (HTML + plain text),
+//    commands, code block insertion, and non-blocking setInnerHTML
+//    ========================================================================== */
+// const SimpleEditor = React.memo(({ content, onChange }) => {
+//   const editorRef = useRef(null);
+
+//   // Keep DOM in sync safely (non-blocking)
+//   useEffect(() => {
+//     if (!editorRef.current) return;
+//     // Only update if different to avoid moving cursor unnecessarily
+//     if (content !== editorRef.current.innerHTML) {
+//       safeSetInnerHTML(editorRef.current, content || "");
+//     }
+//   }, [content]);
+
+//   // On input -> bubble up HTML
+//   const handleInput = useCallback(() => {
+//     if (!editorRef.current) return;
+//     // Batch update to next frame
+//     requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
+//   }, [onChange]);
+
+//   // Exec command (bold, italic, heading, lists)
+//   const execCmd = useCallback((command, value = null) => {
+//     document.execCommand(command, false, value);
+//     editorRef.current?.focus();
+//   }, []);
+
+//   // Insert a styled code block preserving selected text
+//   const insertCode = useCallback(() => {
+//     const selection = window.getSelection();
+//     const selectedText = selection?.toString() || "code here";
+//     const pre = document.createElement("pre");
+//     pre.style.cssText =
+//       "background:#1e1e1e;color:#fff;padding:1rem;border-radius:8px;margin:1rem 0;overflow-x:auto;font-family:monospace;";
+//     pre.textContent = selectedText;
+
+//     if (selection && selection.rangeCount > 0) {
+//       const range = selection.getRangeAt(0);
+//       range.deleteContents();
+//       range.insertNode(pre);
+//       // Move caret after inserted node
+//       const newRange = document.createRange();
+//       newRange.setStartAfter(pre);
+//       newRange.collapse(true);
+//       selection.removeAllRanges();
+//       selection.addRange(newRange);
+//       editorRef.current?.focus();
+//       // propagate change
+//       requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
+//     } else {
+//       editorRef.current?.appendChild(pre);
+//       requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
+//     }
+//   }, [onChange]);
+
+//   // Handle paste events: support HTML and plain text with newline -> <p>/<br>
+//   const handlePaste = useCallback((e) => {
+//     e.preventDefault();
+//     const clipboard = e.clipboardData || window.clipboardData;
+//     if (!clipboard) return;
+
+//     const html = clipboard.getData("text/html");
+//     const text = clipboard.getData("text/plain");
+
+//     if (html) {
+//       // insert HTML preserving markup
+//       document.execCommand("insertHTML", false, html);
+//     } else if (text) {
+//       // sanitize plain text: convert newlines to <br> (or wrap in <p>)
+//       const escaped = text
+//         .replace(/&/g, "&amp;")
+//         .replace(/</g, "&lt;")
+//         .replace(/>/g, "&gt;");
+//       const withBreaks = escaped.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br />");
+//       const wrapped = `<p>${withBreaks}</p>`;
+//       document.execCommand("insertHTML", false, wrapped);
+//     }
+
+//     // After paste, propagate content
+//     requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
+//   }, [onChange]);
+
+//   return (
+//     <div className="flex flex-col h-full">
+//       {/* Toolbar */}
+//       <div className="bg-gray-50 dark:bg-gray-900 border-b p-2 flex flex-wrap gap-2">
+//         <button
+//           onClick={() => execCmd("bold")}
+//           className="p-2 bg-white border rounded hover:bg-gray-100"
+//           type="button"
+//           title="Bold"
+//         >
+//           <FiBold size={16} />
+//         </button>
+//         <button
+//           onClick={() => execCmd("italic")}
+//           className="p-2 bg-white border rounded hover:bg-gray-100"
+//           type="button"
+//           title="Italic"
+//         >
+//           <FiItalic size={16} />
+//         </button>
+//         <div className="w-px h-6 bg-gray-300" />
+//         <button
+//           onClick={() => execCmd("formatBlock", "h2")}
+//           className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-sm"
+//           type="button"
+//           title="Heading 2"
+//         >
+//           H2
+//         </button>
+//         <button
+//           onClick={() => execCmd("formatBlock", "h3")}
+//           className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-sm"
+//           type="button"
+//           title="Heading 3"
+//         >
+//           H3
+//         </button>
+//         <button
+//           onClick={() => execCmd("insertUnorderedList")}
+//           className="px-3 py-1 bg-white border rounded hover:bg-gray-100 text-sm"
+//           type="button"
+//           title="Bullet List"
+//         >
+//           • List
+//         </button>
+//         <button
+//           onClick={insertCode}
+//           className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+//           type="button"
+//           title="Code Block"
+//         >
+//           <FiCode size={16} />
+//         </button>
+//       </div>
+
+//       {/* Editor */}
+//       <div
+//         ref={editorRef}
+//         contentEditable
+//         onInput={handleInput}
+//         onPaste={handlePaste}
+//         className="flex-1 p-4 overflow-y-auto focus:outline-none bg-white dark:bg-gray-900 prose dark:prose-invert"
+//         style={{ minHeight: "300px" }}
+//         suppressContentEditableWarning
+//       />
+//     </div>
+//   );
+// });
+
+// SimpleEditor.displayName = "SimpleEditor";
+
+// /* ==========================================================================
+//    Topic Card (keeps your styles)
+//    ========================================================================== */
+// const TopicCard = React.memo(({ topic, onEdit, onDelete }) => (
+//   <div className="bg-white dark:bg-gray-900 border rounded-xl p-4 hover:shadow-lg transition group relative">
+//     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+//       <button
+//         onClick={() => onEdit(topic)}
+//         className="p-2 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
+//         type="button"
+//       >
+//         <FiEdit size={14} />
+//       </button>
+//       <button
+//         onClick={() => onDelete(topic)}
+//         className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100"
+//         type="button"
+//       >
+//         <FiTrash2 size={14} />
+//       </button>
+//     </div>
+//     <div className="text-xs font-bold text-indigo-600 uppercase mb-2">
+//       {topic.course_detail?.title || "Course"}
+//     </div>
+//     <h3 className="text-lg font-bold mb-2 line-clamp-2">{topic.title}</h3>
+//     <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+//       {topic.description || "No description"}
+//     </p>
+//   </div>
+// ));
+// TopicCard.displayName = "TopicCard";
+
+// /* ==========================================================================
+//    Main AdminTopics component (refactored)
+//    ========================================================================== */
+// export default function AdminTopics() {
+//   const [topics, setTopics] = useState([]);
+//   const [courses, setCourses] = useState([]);
+//   const [loading, setLoading] = useState(false);
+
+//   const [saving, setSaving] = useState(false);
+//   const [modalOpen, setModalOpen] = useState(false);
+//   const [editing, setEditing] = useState(null);
+
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [videoUrl, setVideoUrl] = useState("");
+//   const [courseId, setCourseId] = useState("");
+//   const [editorContent, setEditorContent] = useState("");
+
+//   // Hold an AbortController for fetches so we can cancel if unmounted
+//   const fetchControllerRef = useRef(null);
+
+//   /* -----------------------
+//      Fetch topics & courses (defer slightly for Render cold starts)
+//      ----------------------- */
+//   const fetchData = useCallback(async () => {
+//     setLoading(true);
+//     if (fetchControllerRef.current) {
+//       try {
+//         fetchControllerRef.current.abort();
+//       } catch(err) {
+//         console.log(err)
+//       }
+//     }
+//     const controller = new AbortController();
+//     fetchControllerRef.current = controller;
+
+//     try {
+//       const [tRes, cRes] = await Promise.all([
+//         client.get("/api/topics/", { signal: controller.signal }),
+//         client.get("/api/courses/", { signal: controller.signal }),
+//       ]);
+
+//       const topicsData = Array.isArray(tRes.data) ? tRes.data : tRes.data.results || [];
+//       const coursesData = Array.isArray(cRes.data) ? cRes.data : cRes.data.results || [];
+
+//       setTopics(topicsData);
+//       setCourses(coursesData);
+//     } catch (e) {
+//       if (e.name !== "CanceledError" && e.name !== "AbortError") {
+//         console.error(e);
+//         toast.error("Failed to load data");
+//       }
+//     } finally {
+//       setLoading(false);
+//       fetchControllerRef.current = null;
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     // small delay to reduce cold-start blocking
+//     const id = setTimeout(() => fetchData(), 120);
+//     return () => clearTimeout(id);
+//   }, [fetchData]);
+
+//   /* -----------------------
+//      Open modal: set fields quickly, then lazily fetch full content_html
+//      ----------------------- */
+//   const handleOpen = useCallback(
+//     async (topic = null) => {
+//       setEditing(topic);
+//       if (topic) {
+//         setTitle(topic.title || "");
+//         setDescription(topic.description || "");
+//         setVideoUrl(topic.video_url || "");
+//         setCourseId(topic.course?.id || topic.course || "");
+//         setEditorContent(""); // blank immediately so modal opens fast
+//       } else {
+//         setTitle("");
+//         setDescription("");
+//         setVideoUrl("");
+//         setCourseId("");
+//         setEditorContent("");
+//       }
+
+//       setModalOpen(true);
+
+//       // If editing, fetch the heavy content AFTER modal opens (avoid blocking)
+//       if (topic) {
+//         // allow modal to render first
+//         setTimeout(async () => {
+//           try {
+//             const full = await client.get(`/api/topics/${topic.id}/`);
+//             // set content safely
+//             setEditorContent(full.data.content_html || "");
+//             // (no toast here; user sees content appear)
+//           } catch (e) {
+//             console.error(e);
+//             setEditorContent("");
+//           }
+//         }, 60);
+//       }
+//     },
+//     []
+//   );
+
+//   /* -----------------------
+//      Save topic (create or update) with optimistic state update
+//      ----------------------- */
+//   const handleSubmit = useCallback(async () => {
+//     if (!title.trim()) return toast.error("Title required");
+//     if (!courseId) return toast.error("Course required");
+
+//     setSaving(true);
+
+//     const payload = {
+//       title: title.trim(),
+//       description: description.trim(),
+//       video_url: videoUrl.trim(),
+//       course: courseId,
+//       content_html: editorContent,
+//     };
+
+//     try {
+//       if (editing) {
+//         const res = await client.put(`/api/topics/${editing.id}/`, payload);
+//         // optimistic update: update only the changed item in list
+//         setTopics((prev) => prev.map((t) => (t.id === editing.id ? res.data : t)));
+//         toast.success("Topic updated!");
+//       } else {
+//         const res = await client.post("/api/topics/", payload);
+//         // optimistic insert: add new topic to top
+//         setTopics((prev) => [res.data, ...prev]);
+//         toast.success("Topic created!");
+//       }
+
+//       setModalOpen(false);
+//       setEditing(null);
+//       // reset editor content (optional)
+//       setEditorContent("");
+//     } catch (e) {
+//       console.error(e);
+//       toast.error("Save failed");
+//     } finally {
+//       setSaving(false);
+//     }
+//   }, [title, description, videoUrl, courseId, editorContent, editing]);
+
+//   /* -----------------------
+//      Delete topic (optimistic)
+//      ----------------------- */
+//   const handleDelete = useCallback(
+//     async (topic) => {
+//       if (!window.confirm("Delete this topic?")) return;
+//       try {
+//         await client.delete(`/api/topics/${topic.id}/`);
+//         setTopics((prev) => prev.filter((t) => t.id !== topic.id));
+//         toast.success("Topic deleted");
+//       } catch (e) {
+//         console.error(e);
+//         toast.error("Delete failed");
+//       }
+//     },
+//     []
+//   );
+
+//   /* -----------------------
+//      Close modal
+//      ----------------------- */
+//   const handleCloseModal = useCallback(() => {
+//     setModalOpen(false);
+//     setEditing(null);
+//     setEditorContent("");
+//   }, []);
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4">
+//       <div className="max-w-6xl mx-auto space-y-4">
+//         {/* Header */}
+//         <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl border">
+//           <div>
+//             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Topics Manager</h1>
+//             <p className="text-sm text-gray-500">Create and manage course topics</p>
+//           </div>
+//           <button
+//             onClick={() => handleOpen()}
+//             className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+//             type="button"
+//           >
+//             <FiPlus /> Add Topic
+//           </button>
+//         </div>
+
+//         {/* Grid */}
+//         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+//           {loading ? (
+//             <div className="col-span-full text-center py-20">
+//               <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+//             </div>
+//           ) : topics.length === 0 ? (
+//             <div className="col-span-full text-center py-20 text-gray-500">
+//               <p>No topics yet. Click "Add Topic" to create one.</p>
+//             </div>
+//           ) : (
+//             topics.map((t) => (
+//               <TopicCard key={t.id} topic={t} onEdit={handleOpen} onDelete={handleDelete} />
+//             ))
+//           )}
+//         </div>
+//       </div>
+
+//       {/* Modal */}
+//       {modalOpen && (
+//         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+//           <div className="bg-white dark:bg-gray-900 w-full max-w-5xl h-[90vh] rounded-xl flex flex-col overflow-hidden shadow-2xl">
+//             {/* Header */}
+//             <div className="flex justify-between items-center p-4 border-b dark:border-gray-800">
+//               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+//                 {editing ? "Edit" : "Create"} Topic
+//               </h2>
+//               <div className="flex gap-2">
+//                 <button
+//                   onClick={handleCloseModal}
+//                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+//                   type="button"
+//                   disabled={saving}
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button
+//                   onClick={handleSubmit}
+//                   className={`flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed ${
+//                     saving ? "pointer-events-none" : ""
+//                   }`}
+//                   type="button"
+//                   disabled={saving}
+//                 >
+//                   {saving ? (
+//                     <>
+//                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+//                       Saving...
+//                     </>
+//                   ) : (
+//                     <>
+//                       <FiSave /> Save
+//                     </>
+//                   )}
+//                 </button>
+//               </div>
+//             </div>
+
+//             {/* Body */}
+//             <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+//               {/* Editor */}
+//               <div className="flex-1 flex flex-col overflow-hidden border-r dark:border-gray-800">
+//                 <SimpleEditor content={editorContent} onChange={setEditorContent} />
+//               </div>
+
+//               {/* Sidebar */}
+//               <div className="w-full lg:w-72 bg-gray-50 dark:bg-gray-800 overflow-y-auto p-4 space-y-4">
+//                 <div>
+//                   <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
+//                     Title *
+//                   </label>
+//                   <input
+//                     type="text"
+//                     value={title}
+//                     onChange={(e) => setTitle(e.target.value)}
+//                     className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
+//                     placeholder="Topic title"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
+//                     Course *
+//                   </label>
+//                   <select
+//                     value={courseId}
+//                     onChange={(e) => setCourseId(e.target.value)}
+//                     className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
+//                   >
+//                     <option value="">Select course</option>
+//                     {courses.map((c) => (
+//                       <option key={c.id} value={c.id}>
+//                         {c.title}
+//                       </option>
+//                     ))}
+//                   </select>
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
+//                     Description
+//                   </label>
+//                   <textarea
+//                     rows={3}
+//                     value={description}
+//                     onChange={(e) => setDescription(e.target.value)}
+//                     className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white resize-none"
+//                     placeholder="Brief description"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
+//                     Video URL
+//                   </label>
+//                   <input
+//                     type="url"
+//                     value={videoUrl}
+//                     onChange={(e) => setVideoUrl(e.target.value)}
+//                     className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
+//                     placeholder="https://youtube.com/..."
+//                   />
+//                 </div>
+
+//                 <div className="pt-4 border-t dark:border-gray-700">
+//                   <p className="text-xs text-gray-500">
+//                     Select text and use toolbar to format. Code blocks will be styled automatically.
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+// import React, { useState, useEffect, useCallback, useRef } from "react";
+import { FiEdit, FiTrash2, FiPlus, FiSave } from "react-icons/fi";
 // import toast from "react-hot-toast";
-// import client from "../../features/auth/api"; // <-- your configured axios instance
+// import client from "../../auth/api"; 
+import TiptapEditor from "../../components/TipTapEditor"// Import the new editor
 
 /* ==========================================================================
-   Helpers: safe DOM update to avoid blocking main thread
-   ========================================================================== */
-function safeSetInnerHTML(element, html) {
-  if (!element) return;
-  const update = () => {
-    if (element.innerHTML !== html) {
-      element.innerHTML = html || "";
-    }
-  };
-  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-    window.requestIdleCallback(() => requestAnimationFrame(update), { timeout: 200 });
-  } else {
-    setTimeout(() => requestAnimationFrame(update), 30);
-  }
-}
-
-/* ==========================================================================
-   SimpleEditor - contentEditable, supports paste (HTML + plain text),
-   commands, code block insertion, and non-blocking setInnerHTML
-   ========================================================================== */
-const SimpleEditor = React.memo(({ content, onChange }) => {
-  const editorRef = useRef(null);
-
-  // Keep DOM in sync safely (non-blocking)
-  useEffect(() => {
-    if (!editorRef.current) return;
-    // Only update if different to avoid moving cursor unnecessarily
-    if (content !== editorRef.current.innerHTML) {
-      safeSetInnerHTML(editorRef.current, content || "");
-    }
-  }, [content]);
-
-  // On input -> bubble up HTML
-  const handleInput = useCallback(() => {
-    if (!editorRef.current) return;
-    // Batch update to next frame
-    requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
-  }, [onChange]);
-
-  // Exec command (bold, italic, heading, lists)
-  const execCmd = useCallback((command, value = null) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-  }, []);
-
-  // Insert a styled code block preserving selected text
-  const insertCode = useCallback(() => {
-    const selection = window.getSelection();
-    const selectedText = selection?.toString() || "code here";
-    const pre = document.createElement("pre");
-    pre.style.cssText =
-      "background:#1e1e1e;color:#fff;padding:1rem;border-radius:8px;margin:1rem 0;overflow-x:auto;font-family:monospace;";
-    pre.textContent = selectedText;
-
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(pre);
-      // Move caret after inserted node
-      const newRange = document.createRange();
-      newRange.setStartAfter(pre);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      editorRef.current?.focus();
-      // propagate change
-      requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
-    } else {
-      editorRef.current?.appendChild(pre);
-      requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
-    }
-  }, [onChange]);
-
-  // Handle paste events: support HTML and plain text with newline -> <p>/<br>
-  const handlePaste = useCallback((e) => {
-    e.preventDefault();
-    const clipboard = e.clipboardData || window.clipboardData;
-    if (!clipboard) return;
-
-    const html = clipboard.getData("text/html");
-    const text = clipboard.getData("text/plain");
-
-    if (html) {
-      // insert HTML preserving markup
-      document.execCommand("insertHTML", false, html);
-    } else if (text) {
-      // sanitize plain text: convert newlines to <br> (or wrap in <p>)
-      const escaped = text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      const withBreaks = escaped.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br />");
-      const wrapped = `<p>${withBreaks}</p>`;
-      document.execCommand("insertHTML", false, wrapped);
-    }
-
-    // After paste, propagate content
-    requestAnimationFrame(() => onChange(editorRef.current.innerHTML));
-  }, [onChange]);
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="bg-gray-50 dark:bg-gray-900 border-b p-2 flex flex-wrap gap-2">
-        <button
-          onClick={() => execCmd("bold")}
-          className="p-2 bg-white border rounded hover:bg-gray-100"
-          type="button"
-          title="Bold"
-        >
-          <FiBold size={16} />
-        </button>
-        <button
-          onClick={() => execCmd("italic")}
-          className="p-2 bg-white border rounded hover:bg-gray-100"
-          type="button"
-          title="Italic"
-        >
-          <FiItalic size={16} />
-        </button>
-        <div className="w-px h-6 bg-gray-300" />
-        <button
-          onClick={() => execCmd("formatBlock", "h2")}
-          className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-sm"
-          type="button"
-          title="Heading 2"
-        >
-          H2
-        </button>
-        <button
-          onClick={() => execCmd("formatBlock", "h3")}
-          className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-sm"
-          type="button"
-          title="Heading 3"
-        >
-          H3
-        </button>
-        <button
-          onClick={() => execCmd("insertUnorderedList")}
-          className="px-3 py-1 bg-white border rounded hover:bg-gray-100 text-sm"
-          type="button"
-          title="Bullet List"
-        >
-          • List
-        </button>
-        <button
-          onClick={insertCode}
-          className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          type="button"
-          title="Code Block"
-        >
-          <FiCode size={16} />
-        </button>
-      </div>
-
-      {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onPaste={handlePaste}
-        className="flex-1 p-4 overflow-y-auto focus:outline-none bg-white dark:bg-gray-900 prose dark:prose-invert"
-        style={{ minHeight: "300px" }}
-        suppressContentEditableWarning
-      />
-    </div>
-  );
-});
-
-SimpleEditor.displayName = "SimpleEditor";
-
-/* ==========================================================================
-   Topic Card (keeps your styles)
+   Topic Card
    ========================================================================== */
 const TopicCard = React.memo(({ topic, onEdit, onDelete }) => (
-  <div className="bg-white dark:bg-gray-900 border rounded-xl p-4 hover:shadow-lg transition group relative">
+  <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-4 hover:shadow-lg transition group relative">
     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
       <button
         onClick={() => onEdit(topic)}
         className="p-2 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
-        type="button"
       >
         <FiEdit size={14} />
       </button>
       <button
         onClick={() => onDelete(topic)}
         className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100"
-        type="button"
       >
         <FiTrash2 size={14} />
       </button>
@@ -1902,7 +2269,7 @@ const TopicCard = React.memo(({ topic, onEdit, onDelete }) => (
     <div className="text-xs font-bold text-indigo-600 uppercase mb-2">
       {topic.course_detail?.title || "Course"}
     </div>
-    <h3 className="text-lg font-bold mb-2 line-clamp-2">{topic.title}</h3>
+    <h3 className="text-lg font-bold mb-2 line-clamp-2 dark:text-gray-100">{topic.title}</h3>
     <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
       {topic.description || "No description"}
     </p>
@@ -1911,7 +2278,7 @@ const TopicCard = React.memo(({ topic, onEdit, onDelete }) => (
 TopicCard.displayName = "TopicCard";
 
 /* ==========================================================================
-   Main AdminTopics component (refactored)
+   Main AdminTopics Component
    ========================================================================== */
 export default function AdminTopics() {
   const [topics, setTopics] = useState([]);
@@ -1922,27 +2289,19 @@ export default function AdminTopics() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
+  // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [courseId, setCourseId] = useState("");
-  const [editorContent, setEditorContent] = useState("");
+  const [editorContent, setEditorContent] = useState(""); // Stores HTML
 
-  // Hold an AbortController for fetches so we can cancel if unmounted
   const fetchControllerRef = useRef(null);
 
-  /* -----------------------
-     Fetch topics & courses (defer slightly for Render cold starts)
-     ----------------------- */
+  /* --- Fetch Data --- */
   const fetchData = useCallback(async () => {
     setLoading(true);
-    if (fetchControllerRef.current) {
-      try {
-        fetchControllerRef.current.abort();
-      } catch(err) {
-        console.log(err)
-      }
-    }
+    if (fetchControllerRef.current) fetchControllerRef.current.abort();
     const controller = new AbortController();
     fetchControllerRef.current = controller;
 
@@ -1951,104 +2310,74 @@ export default function AdminTopics() {
         client.get("/api/topics/", { signal: controller.signal }),
         client.get("/api/courses/", { signal: controller.signal }),
       ]);
-
-      const topicsData = Array.isArray(tRes.data) ? tRes.data : tRes.data.results || [];
-      const coursesData = Array.isArray(cRes.data) ? cRes.data : cRes.data.results || [];
-
-      setTopics(topicsData);
-      setCourses(coursesData);
+      setTopics(Array.isArray(tRes.data) ? tRes.data : tRes.data.results || []);
+      setCourses(Array.isArray(cRes.data) ? cRes.data : cRes.data.results || []);
     } catch (e) {
-      if (e.name !== "CanceledError" && e.name !== "AbortError") {
-        console.error(e);
-        toast.error("Failed to load data");
-      }
+      if (e.name !== "CanceledError") toast.error("Failed to load data");
     } finally {
       setLoading(false);
-      fetchControllerRef.current = null;
     }
   }, []);
 
   useEffect(() => {
-    // small delay to reduce cold-start blocking
-    const id = setTimeout(() => fetchData(), 120);
-    return () => clearTimeout(id);
+    fetchData();
+    return () => fetchControllerRef.current?.abort();
   }, [fetchData]);
 
-  /* -----------------------
-     Open modal: set fields quickly, then lazily fetch full content_html
-     ----------------------- */
-  const handleOpen = useCallback(
-    async (topic = null) => {
-      setEditing(topic);
-      if (topic) {
-        setTitle(topic.title || "");
-        setDescription(topic.description || "");
-        setVideoUrl(topic.video_url || "");
-        setCourseId(topic.course?.id || topic.course || "");
-        setEditorContent(""); // blank immediately so modal opens fast
-      } else {
-        setTitle("");
-        setDescription("");
-        setVideoUrl("");
-        setCourseId("");
+  /* --- Handle Modal Open --- */
+  const handleOpen = useCallback(async (topic = null) => {
+    setEditing(topic);
+    setModalOpen(true);
+
+    if (topic) {
+      setTitle(topic.title || "");
+      setDescription(topic.description || "");
+      setVideoUrl(topic.video_url || "");
+      setCourseId(topic.course?.id || topic.course || "");
+      
+      // Fetch full content including content_html
+      try {
+        const full = await client.get(`/api/topics/${topic.id}/`);
+        setEditorContent(full.data.content_html || "");
+      } catch (e) {
+        toast.error("Failed to load topic content");
         setEditorContent("");
       }
+    } else {
+      // Reset for create
+      setTitle("");
+      setDescription("");
+      setVideoUrl("");
+      setCourseId("");
+      setEditorContent("<p></p>"); // Initialize with empty P tag
+    }
+  }, []);
 
-      setModalOpen(true);
-
-      // If editing, fetch the heavy content AFTER modal opens (avoid blocking)
-      if (topic) {
-        // allow modal to render first
-        setTimeout(async () => {
-          try {
-            const full = await client.get(`/api/topics/${topic.id}/`);
-            // set content safely
-            setEditorContent(full.data.content_html || "");
-            // (no toast here; user sees content appear)
-          } catch (e) {
-            console.error(e);
-            setEditorContent("");
-          }
-        }, 60);
-      }
-    },
-    []
-  );
-
-  /* -----------------------
-     Save topic (create or update) with optimistic state update
-     ----------------------- */
+  /* --- Save Data --- */
   const handleSubmit = useCallback(async () => {
     if (!title.trim()) return toast.error("Title required");
     if (!courseId) return toast.error("Course required");
 
     setSaving(true);
-
     const payload = {
       title: title.trim(),
       description: description.trim(),
       video_url: videoUrl.trim(),
       course: courseId,
-      content_html: editorContent,
+      content_html: editorContent, // Send clean HTML from TipTap
     };
 
     try {
       if (editing) {
         const res = await client.put(`/api/topics/${editing.id}/`, payload);
-        // optimistic update: update only the changed item in list
         setTopics((prev) => prev.map((t) => (t.id === editing.id ? res.data : t)));
         toast.success("Topic updated!");
       } else {
         const res = await client.post("/api/topics/", payload);
-        // optimistic insert: add new topic to top
         setTopics((prev) => [res.data, ...prev]);
         toast.success("Topic created!");
       }
-
-      setModalOpen(false);
-      setEditing(null);
-      // reset editor content (optional)
-      setEditorContent("");
+      handleCloseModal();
     } catch (e) {
       console.error(e);
       toast.error("Save failed");
@@ -2057,60 +2386,51 @@ export default function AdminTopics() {
     }
   }, [title, description, videoUrl, courseId, editorContent, editing]);
 
-  /* -----------------------
-     Delete topic (optimistic)
-     ----------------------- */
-  const handleDelete = useCallback(
-    async (topic) => {
-      if (!window.confirm("Delete this topic?")) return;
-      try {
-        await client.delete(`/api/topics/${topic.id}/`);
-        setTopics((prev) => prev.filter((t) => t.id !== topic.id));
-        toast.success("Topic deleted");
-      } catch (e) {
-        console.error(e);
-        toast.error("Delete failed");
-      }
-    },
-    []
-  );
+  /* --- Delete Data --- */
+  const handleDelete = useCallback(async (topic) => {
+    if (!window.confirm("Delete this topic?")) return;
+    try {
+      await client.delete(`/api/topics/${topic.id}/`);
+      setTopics((prev) => prev.filter((t) => t.id !== topic.id));
+      toast.success("Topic deleted");
+    } catch (e) {
+      toast.error("Delete failed");
+    }
+  }, []);
 
-  /* -----------------------
-     Close modal
-     ----------------------- */
-  const handleCloseModal = useCallback(() => {
+  const handleCloseModal = () => {
     setModalOpen(false);
     setEditing(null);
     setEditorContent("");
-  }, []);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4">
-      <div className="max-w-6xl mx-auto space-y-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
         {/* Header */}
-        <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl border">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl border dark:border-gray-800 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Topics Manager</h1>
-            <p className="text-sm text-gray-500">Create and manage course topics</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Topics</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage your course curriculum</p>
           </div>
           <button
             onClick={() => handleOpen()}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-            type="button"
+            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 dark:shadow-none"
           >
-            <FiPlus /> Add Topic
+            <FiPlus size={20} /> Add New Topic
           </button>
         </div>
 
-        {/* Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Content Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="col-span-full text-center py-20">
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="col-span-full flex justify-center py-20">
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : topics.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-gray-500">
-              <p>No topics yet. Click "Add Topic" to create one.</p>
+            <div className="col-span-full text-center py-20 bg-white dark:bg-gray-900 rounded-2xl border dark:border-gray-800 border-dashed">
+              <p className="text-gray-500">No topics found. Create one to get started.</p>
             </div>
           ) : (
             topics.map((t) => (
@@ -2120,118 +2440,104 @@ export default function AdminTopics() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal Overlay */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className="bg-white dark:bg-gray-900 w-full max-w-5xl h-[90vh] rounded-xl flex flex-col overflow-hidden shadow-2xl">
-            {/* Header */}
-            <div className="flex justify-between items-center p-4 border-b dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {editing ? "Edit" : "Create"} Topic
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 w-full max-w-[90vw] h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border dark:border-gray-700">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                {editing ? `Editing: ${editing.title}` : "Create New Topic"}
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                  type="button"
-                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className={`flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed ${
-                    saving ? "pointer-events-none" : ""
-                  }`}
-                  type="button"
                   disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-md"
                 >
-                  {saving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <FiSave /> Save
-                    </>
-                  )}
+                  {saving ? "Saving..." : <><FiSave /> Save Topic</>}
                 </button>
               </div>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-              {/* Editor */}
-              <div className="flex-1 flex flex-col overflow-hidden border-r dark:border-gray-800">
-                <SimpleEditor content={editorContent} onChange={setEditorContent} />
+            {/* Modal Body: Split View */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+              
+              {/* Left: Tiptap Editor */}
+              <div className="flex-1 flex flex-col min-h-[50%] lg:h-auto border-r dark:border-gray-800 p-6 overflow-hidden">
+                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                   Topic Content
+                 </label>
+                 <div className="flex-1 overflow-hidden rounded-xl border dark:border-gray-700 shadow-inner">
+                   <TiptapEditor content={editorContent} onChange={setEditorContent} />
+                 </div>
               </div>
 
-              {/* Sidebar */}
-              <div className="w-full lg:w-72 bg-gray-50 dark:bg-gray-800 overflow-y-auto p-4 space-y-4">
+              {/* Right: Settings Sidebar */}
+              <div className="w-full lg:w-80 bg-gray-50 dark:bg-gray-800/50 p-6 overflow-y-auto space-y-6">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
-                    placeholder="Topic title"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
-                    Course *
+                  <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    Course Selection
                   </label>
                   <select
                     value={courseId}
                     onChange={(e) => setCourseId(e.target.value)}
-                    className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
-                    <option value="">Select course</option>
+                    <option value="">-- Select a Course --</option>
                     {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
+                      <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
-                    Description
+                  <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    Topic Title
                   </label>
-                  <textarea
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white resize-none"
-                    placeholder="Brief description"
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="e.g. Introduction to React"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">
-                    Video URL
+                  <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    Short Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                    placeholder="A brief summary shown on the card..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    Video URL (Optional)
                   </label>
                   <input
                     type="url"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
-                    className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     placeholder="https://youtube.com/..."
                   />
                 </div>
-
-                <div className="pt-4 border-t dark:border-gray-700">
-                  <p className="text-xs text-gray-500">
-                    Select text and use toolbar to format. Code blocks will be styled automatically.
-                  </p>
-                </div>
               </div>
+
             </div>
           </div>
         </div>
