@@ -162,6 +162,10 @@ code {
   background: rgba(99, 102, 241, 0.2);
   color: #c4b5fd;
 }
+.hljs {
+  background: transparent !important;
+  color: white;
+}
 
 
 

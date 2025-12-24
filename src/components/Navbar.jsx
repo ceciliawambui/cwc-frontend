@@ -43,7 +43,7 @@ export default function Navbar() {
               bg-clip-text text-transparent 
               hover:opacity-90 transition-opacity"
           >
-            DevHaven
+            DevNook
           </Link>
 
           {/* Desktop Menu */}

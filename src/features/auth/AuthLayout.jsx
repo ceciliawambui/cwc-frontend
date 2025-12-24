@@ -22,7 +22,7 @@ export default function AuthLayout({ title, subtitle, children }) {
             className="flex-1 text-center lg:text-left"
           >
             <h1 className="text-5xl sm:text-6xl font-extrabold gradient-text mb-4">
-              DevHaven
+              DevNook
             </h1>
 
             <p

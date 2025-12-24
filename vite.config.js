@@ -15,7 +15,16 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss({
-      darkMode: 'class', // ✅ ensure Tailwind uses class-based dark mode
+      darkMode: 'class',
     }),
   ],
+  resolve: {
+    dedupe: [
+      "prosemirror-state",
+      "prosemirror-transform",
+      "prosemirror-model",
+      "prosemirror-view",
+      "@blocknote/core",
+      "@blocknote/react"
+    ]},
 })

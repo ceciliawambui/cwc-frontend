@@ -135,7 +135,7 @@ export default function CourseDetail() {
             {course.title}
           </h1>
           <p className={`mt-4 max-w-3xl leading-relaxed text-lg ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-            {course.description || "Dive into an immersive DevHaven filled with practical lessons, deep insights, and technical guides that grow with you."}
+            {course.description || "Dive into an immersive DevNook filled with practical lessons, deep insights, and technical guides that grow with you."}
           </p>
           <div className="mt-6 flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2"><Layers className="text-pink-500" size={18} /><span>{topics.length} Topics</span></div>

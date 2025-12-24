@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 export default function RegisterPage() {
   const nav = useNavigate();
   return (
-    <AuthLayout title="Join the DevHaven">
+    <AuthLayout title="Join the DevNook">
       <AuthForm
         mode="register"
         onSuccess={() => setTimeout(() => nav("/login"), 800)}

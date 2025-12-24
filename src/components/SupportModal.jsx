@@ -41,7 +41,7 @@ const SupportModal = ({ onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white dark:bg-[#0A0A0C] p-6 rounded-lg w-full max-w-md z-10">
-        <h3 className="text-xl font-semibold mb-3">Support DevHaven</h3>
+        <h3 className="text-xl font-semibold mb-3">Support DevNook</h3>
 
         <label className="block mb-2">Email</label>
         <input

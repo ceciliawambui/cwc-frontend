@@ -251,7 +251,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className={`mt-6 text-base leading-relaxed max-w-lg ${textSecondary}`}>
-            DevHaven is a modern space where developers of all levels come to learn, 
+            DevNook is a modern space where developers of all levels come to learn, 
             sharpen their skills, and stay ahead. Explore curated topics, practical 
             tutorials, and real-world learning paths designed to help you grow with confidence.
           </p>
@@ -304,7 +304,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          Why DevHaven?
+          Why DevNook?
         </motion.h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">

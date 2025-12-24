@@ -121,7 +121,7 @@ function Sidebar({
     >
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-800">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          DevHaven
+          DevNook
         </h2>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -176,7 +176,7 @@ function TopBar({ sidebarOpen, setSidebarOpen, user }) {
           <Menu className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          DevHaven Admin Panel
+          DevNook Admin Panel
         </h1>
       </div>
 

@@ -467,21 +467,778 @@
 //     </div>
 //   );
 // }
+// import React, { useEffect, useMemo, useRef, useState } from "react";
+// import { useParams, useNavigate } from "react-router-dom";
+// // eslint-disable-next-line no-unused-vars
+// import { motion, useScroll, useSpring } from "framer-motion";
+// import {
+//   FiClock, FiCopy, FiCheck, FiBook, FiVideo,
+//   FiArrowLeft, FiHash, FiCalendar, FiShare2, FiArrowRight,
+//   FiChevronRight, FiArrowUp
+// } from "react-icons/fi";
+// import toast from "react-hot-toast";
+// import client from "../../auth/api";
+// import { useTheme } from "../../../context/ThemeContext";
+
+// // Syntax Highlighting
+// import hljs from "highlight.js";
+// import "highlight.js/styles/atom-one-dark.css";
+
+// // HTML Parsing
+// import DOMPurify from "dompurify";
+// import parse, { Element, domToReact} from "html-react-parser";
+
+
+// const ReadingProgress = ({ theme }) => {
+//   const { scrollYProgress } = useScroll();
+//   const scaleX = useSpring(scrollYProgress, {
+//     stiffness: 100,
+//     damping: 30,
+//     restDelta: 0.001
+//   });
+
+//   const gradientColor = theme === "dark"
+//     ? "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500"
+//     : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600";
+
+//   return (
+//     <motion.div
+//       className={`fixed top-0 left-0 right-0 h-1.5 ${gradientColor} origin-left z-[100]`}
+//       style={{ scaleX }}
+//     />
+//   );
+// };
+
+
+// /* ==========================================================================
+//    UTILITY HELPERS
+//    ========================================================================== */
+
+// function decodeHtml(html) {
+//   if (!html) return "";
+//   const txt = document.createElement("textarea");
+//   txt.innerHTML = html;
+//   return txt.value;
+// }
+
+// function extractTextFromDomNode(node) {
+//   if (!node) return "";
+//   if (node.type === "text") return node.data;
+//   if (node.children && node.children.length > 0) {
+//     return node.children.map(extractTextFromDomNode).join("");
+//   }
+//   return "";
+// }
+
+// function cleanCodeString(rawString) {
+//   if (!rawString) return "";
+//   return rawString.replace(/\u00A0/g, " ").replace(/&nbsp;/g, " ");
+// }
+
+// function injectHeadingIDs(html) {
+//   if (!html) return "";
+//   const temp = document.createElement("div");
+//   temp.innerHTML = html;
+//   const headings = temp.querySelectorAll("h1, h2, h3, h4, h5, h6");
+//   headings.forEach((h, idx) => {
+//     const id = (h.textContent || "")
+//       .toLowerCase()
+//       .trim()
+//       .replace(/\s+/g, "-")
+//       .replace(/[^\w-]/g, "") + "-" + idx;
+//     h.setAttribute("id", id);
+//   });
+//   return temp.innerHTML;
+// }
+
+// // Convert inline-styled paragraphs to proper headings
+// function convertInlineStyledParagraphsToHeadings(html) {
+//   if (!html) return "";
+//   const temp = document.createElement("div");
+//   temp.innerHTML = html;
+//   const paragraphs = temp.querySelectorAll("p[style]");
+  
+//   paragraphs.forEach((p) => {
+//     const style = p.getAttribute("style");
+//     if (!style) return;
+    
+//     const sizeMatch = style.match(/font-size:\s*(\d+)px/i);
+//     if (!sizeMatch) return;
+    
+//     const size = parseInt(sizeMatch[1]);
+//     let level = null;
+    
+//     if (size >= 32) level = "h1";
+//     else if (size >= 26) level = "h2";
+//     else if (size >= 22) level = "h3";
+//     else if (size >= 18) level = "h4";
+    
+//     if (level) {
+//       const h = document.createElement(level);
+//       h.innerHTML = p.innerHTML;
+//       p.replaceWith(h);
+//     }
+//   });
+  
+//   return temp.innerHTML;
+// }
+
+// /* ==========================================================================
+//    CODE BLOCK COMPONENT
+//    ========================================================================== */
+
+// const CodeBlock = ({ code, language }) => {
+//   const [copied, setCopied] = useState(false);
+//   const codeRef = useRef(null);
+
+//   useEffect(() => {
+//     if (codeRef.current && code) {
+//       let cleanLang = language;
+//       if (cleanLang && cleanLang.startsWith("language-")) {
+//         cleanLang = cleanLang.replace("language-", "");
+//       }
+
+//       try {
+//         const result = cleanLang && hljs.getLanguage(cleanLang)
+//           ? hljs.highlight(code, { language: cleanLang })
+//           : hljs.highlightAuto(code);
+
+//         codeRef.current.innerHTML = result.value;
+//         codeRef.current.classList.add("hljs");
+//       } catch (e) {
+//         console.error("Highlighting error:", e);
+//         codeRef.current.textContent = code;
+//       }
+//     }
+//   }, [code, language]);
+
+//   const handleCopy = async () => {
+//     try {
+//       await navigator.clipboard.writeText(code);
+//       setCopied(true);
+//       setTimeout(() => setCopied(false), 2000);
+//     } catch (err) {
+//       console.error("Failed to copy", err);
+//     }
+//   };
+
+//   return (
+//     <motion.div
+//       className="my-8 rounded-2xl overflow-hidden bg-[#0d1117] border border-gray-700/50 shadow-2xl group ring-1 ring-white/10"
+//       initial={{ opacity: 0, y: 10 }}
+//       whileInView={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.4 }}
+//       viewport={{ once: true }}
+//     >
+//       <div className="flex items-center justify-between px-5 py-3 bg-[#161b22] border-b border-gray-800 select-none">
+//         <div className="flex items-center gap-3">
+//           <div className="flex gap-1.5">
+//             <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+//             <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+//             <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+//           </div>
+//           {language && (
+//             <span className="text-xs font-mono text-gray-400 uppercase opacity-70">
+//               {language.replace("language-", "")}
+//             </span>
+//           )}
+//         </div>
+
+//         <button
+//           onClick={handleCopy}
+//           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-300 hover:text-white transition-all bg-white/5 hover:bg-white/15 rounded-lg border border-gray-700/50 hover:border-gray-500"
+//         >
+//           {copied ? <FiCheck className="text-emerald-400" size={14} /> : <FiCopy size={14} />}
+//           {copied ? "COPIED" : "COPY"}
+//         </button>
+//       </div>
+
+//       <div className="relative overflow-x-auto">
+//         <pre className="m-0 !p-6 !bg-transparent">
+//           <code
+//             ref={codeRef}
+//             className="font-mono text-sm leading-relaxed !text-white !bg-transparent"
+//           >
+//             {code}
+//           </code>
+//         </pre>
+//       </div>
+//     </motion.div>
+//   );
+// };
+
+// /* ==========================================================================
+//    CONTENT RENDERER COMPONENT - THE MAIN FIX
+//    ========================================================================== */
+
+// const ContentRenderer = ({ htmlContent, theme = "light" }) => {
+//   const processedHtml = useMemo(() => {
+//     if (!htmlContent) return "";
+
+//     let decoded = decodeHtml(htmlContent);
+    
+//     // Convert inline-styled paragraphs to proper headings
+//     decoded = convertInlineStyledParagraphsToHeadings(decoded);
+    
+//     // Merge broken code blocks
+//     decoded = decoded.replace(/<\/code>\s*<\/pre>\s*<pre[^>]*>\s*<code[^>]*>/gi, "\n");
+//     decoded = decoded.replace(/<\/pre>\s*<pre[^>]*>/gi, "\n");
+    
+//     // Remove empty paragraphs
+//     decoded = decoded.replace(/<p><\/p>/g, "");
+//     decoded = decoded.replace(/<p>\s*<\/p>/g, "");
+    
+//     // Clean up BlockNote artifacts
+//     decoded = decoded.replace(/data-id="[^"]*"/g, "");
+//     decoded = decoded.replace(/data-content-type="[^"]*"/g, "");
+    
+//     const clean = DOMPurify.sanitize(decoded, {
+//       USE_PROFILES: { html: true },
+//       ADD_TAGS: ["iframe", "img", "pre", "code", "span", "figure"],
+//       ADD_ATTR: [
+//         "style", "class", "id", "src", "alt", "allow", "allowfullscreen",
+//         "frameborder", "scrolling", "data-language", "width", "height"
+//       ],
+//       FORBID_TAGS: ["script"],
+//       ALLOWED_URI_REGEXP: /^https?:\/\//i,
+//     });
+
+//     return injectHeadingIDs(clean);
+//   }, [htmlContent]);
+
+//   const options = {
+//     replace: (domNode) => {
+//       // Handle Code Blocks
+//       if (domNode instanceof Element && domNode.name === "pre") {
+//         const codeNode = domNode.children?.find((c) => c.name === "code");
+
+//         if (codeNode) {
+//           let language = codeNode.attribs?.class || "plaintext";
+//           if (domNode.attribs?.["data-language"]) {
+//             language = domNode.attribs["data-language"];
+//           }
+
+//           const rawCode = cleanCodeString(extractTextFromDomNode(codeNode));
+//           if (!rawCode.trim()) return null;
+
+//           return (
+//             <div className="not-prose max-w-full">
+//               <CodeBlock code={rawCode} language={language} />
+//             </div>
+//           );
+//         }
+//       }
+
+//       // Handle Images
+//       if (domNode instanceof Element && domNode.name === "img") {
+//         return (
+//           <motion.div
+//             initial={{ opacity: 0, scale: 0.96 }}
+//             whileInView={{ opacity: 1, scale: 1 }}
+//             transition={{ duration: 0.5 }}
+//             viewport={{ once: true }}
+//             className="my-10"
+//           >
+//             <img
+//               src={domNode.attribs.src}
+//               alt={domNode.attribs.alt || "Content Image"}
+//               className="rounded-2xl shadow-xl w-full border border-gray-200 dark:border-gray-800"
+//               loading="lazy"
+//             />
+//           </motion.div>
+//         );
+//       }
+
+//       // Handle Headings - ensure proper styling
+//       if (domNode instanceof Element && /^h[1-6]$/.test(domNode.name)) {
+//         const HeadingTag = domNode.name;
+//         return (
+//           <HeadingTag
+//             id={domNode.attribs?.id}
+//             className={`
+//               ${HeadingTag === 'h1' ? 'text-4xl font-black mb-6 mt-12' : ''}
+//               ${HeadingTag === 'h2' ? 'text-3xl font-bold mb-5 mt-10' : ''}
+//               ${HeadingTag === 'h3' ? 'text-2xl font-semibold mb-4 mt-8' : ''}
+//               ${HeadingTag === 'h4' ? 'text-xl font-semibold mb-3 mt-6' : ''}
+//               ${HeadingTag === 'h5' ? 'text-lg font-semibold mb-2 mt-4' : ''}
+//               ${HeadingTag === 'h6' ? 'text-base font-semibold mb-2 mt-4' : ''}
+//               scroll-mt-32
+//               ${theme === 'dark' ? 'text-white' : 'text-gray-900'}
+//             `}
+//           >
+//             {domToReact(domNode.children, options)}
+//           </HeadingTag>
+//         );
+//       }
+
+//       // Handle Lists - ensure proper styling
+//       if (domNode instanceof Element && (domNode.name === "ul" || domNode.name === "ol")) {
+//         const ListTag = domNode.name;
+//         return (
+//           <ListTag
+//             className={`
+//               my-6 space-y-2
+//               ${ListTag === 'ul' ? 'list-disc' : 'list-decimal'}
+//               ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
+//               pl-6 marker:text-blue-500
+//             `}
+//           >
+//             {domToReact(domNode.children, options)}
+//           </ListTag>
+//         );
+//       }
+
+//       // Handle List Items
+//       if (domNode instanceof Element && domNode.name === "li") {
+//         return (
+//           <li className="leading-relaxed pl-2">
+//             {domToReact(domNode.children, options)}
+//           </li>
+//         );
+//       }
+
+//       // Handle Paragraphs
+//       if (domNode instanceof Element && domNode.name === "p") {
+//         return (
+//           <p className={`
+//             leading-[1.8] mb-6 text-lg
+//             ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
+//           `}>
+//             {domToReact(domNode.children, options)}
+//           </p>
+//         );
+//       }
+
+//       // Handle Blockquotes
+//       if (domNode instanceof Element && domNode.name === "blockquote") {
+//         return (
+//           <blockquote className={`
+//             my-6 border-l-4 border-blue-500 pl-6 py-2 rounded-r-lg
+//             ${theme === 'dark' 
+//               ? 'bg-blue-500/10 text-gray-300' 
+//               : 'bg-blue-50 text-gray-700'}
+//             italic
+//           `}>
+//             {domToReact(domNode.children, options)}
+//           </blockquote>
+//         );
+//       }
+
+//       // Handle Links
+//       if (domNode instanceof Element && domNode.name === "a") {
+//         return (
+//           <a
+//             href={domNode.attribs.href}
+//             target="_blank"
+//             rel="noopener noreferrer"
+//             className="text-blue-500 hover:text-blue-600 underline decoration-blue-500/30 hover:decoration-blue-600 underline-offset-2 transition-colors"
+//           >
+//             {domToReact(domNode.children, options)}
+//           </a>
+//         );
+//       }
+
+//       // Handle Bold
+//       if (domNode instanceof Element && (domNode.name === "strong" || domNode.name === "b")) {
+//         return (
+//           <strong className="font-bold">
+//             {domToReact(domNode.children, options)}
+//           </strong>
+//         );
+//       }
+
+//       // Handle Italic
+//       if (domNode instanceof Element && (domNode.name === "em" || domNode.name === "i")) {
+//         return (
+//           <em className="italic">
+//             {domToReact(domNode.children, options)}
+//           </em>
+//         );
+//       }
+//     },
+//   };
+
+//   return (
+//     <article className="max-w-none w-full">
+//       {parse(processedHtml, options)}
+//     </article>
+//   );
+// };
+
+
+// const TableOfContents = React.memo(({ toc, activeId, theme }) => {
+//   if (!toc || toc.length === 0) return null;
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, x: 20 }}
+//       animate={{ opacity: 1, x: 0 }}
+//       transition={{ duration: 0.5 }}
+//       className={`p-6 rounded-2xl border backdrop-blur-md transition-colors
+//         ${theme === "dark"
+//           ? "bg-gray-900/80 border-gray-700/50"
+//           : "bg-white/80 border-indigo-100/50 shadow-lg shadow-indigo-100/50"}`
+//       }
+//     >
+//       <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+//         <FiBook className="text-blue-500" />
+//         Contents
+//       </h4>
+//       <nav className="space-y-1 relative">
+//         {/* Decorative line */}
+//         <div className={`absolute left-[5px] top-2 bottom-2 w-px ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+//         {toc.map((item) => (
+//           <a
+//             key={item.id}
+//             href={`#${item.id}`}
+//             onClick={(e) => {
+//               e.preventDefault();
+//               document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+//             }}
+//             className={`
+//                block pl-4 py-2 text-sm transition-all relative
+//                ${item.level === 3 ? "ml-4" : ""}
+//                ${activeId === item.id
+//                 ? "text-blue-500 font-semibold"
+//                 : theme === 'dark' ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-900"
+//               }
+//             `}
+//           >
+//             {activeId === item.id && (
+//               <motion.div
+//                 layoutId="toc-active"
+//                 className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-full bg-blue-500 rounded-full"
+//               />
+//             )}
+//             {item.text}
+//           </a>
+//         ))}
+//       </nav>
+//     </motion.div>
+//   );
+// });
+// TableOfContents.displayName = "TableOfContents";
+
+// /* ==========================================================================
+//    MAIN PAGE COMPONENT
+//    ========================================================================== */
+// export default function TopicDetail() {
+//   const { slug } = useParams();
+//   const navigate = useNavigate();
+//   const { theme } = useTheme();
+
+//   const [topic, setTopic] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [activeId, setActiveId] = useState("");
+//   const [recommended, setRecommended] = useState([]);
+//   const [recLoading, setRecLoading] = useState(false);
+//   const [showBackToTop, setShowBackToTop] = useState(false);
+
+//   // 1. Fetch Topic
+//   useEffect(() => {
+//     let mounted = true;
+//     const fetchTopic = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await client.get(`/api/topics/slug/${slug}/`);
+//         if (mounted) setTopic(res.data);
+//       } catch (err) {
+//         console.error("Topic load failed:", err);
+//         toast.error("Failed to load topic");
+//       } finally {
+//         if (mounted) setLoading(false);
+//       }
+//     };
+//     fetchTopic();
+//     return () => { mounted = false; };
+//   }, [slug]);
+
+//   // 2. Fetch Recommended
+//   useEffect(() => {
+//     if (!topic?.id) return;
+//     let mounted = true;
+//     const fetchRecommended = async () => {
+//       setRecLoading(true);
+//       try {
+//         const res = await client.get(`/api/topics/${topic.id}/ai-recommended/`);
+//         if (mounted) {
+//           setRecommended(Array.isArray(res.data) ? res.data : (res.data.results || []));
+//         }
+//       } catch (err) {
+//         console.log(err)
+//         // Silently fail for recommendations
+//       } finally {
+//         if (mounted) setRecLoading(false);
+//       }
+//     };
+//     fetchRecommended();
+//     return () => { mounted = false; };
+//   }, [topic?.id]);
+
+//   // 3. Scroll Spy for TOC
+//   useEffect(() => {
+//     if (!topic) return;
+//     const observer = new IntersectionObserver(
+//       (entries) => {
+//         entries.forEach((entry) => {
+//           if (entry.isIntersecting) setActiveId(entry.target.id);
+//         });
+//       },
+//       { rootMargin: "0px 0px -60% 0px" }
+//     );
+//     const heads = document.querySelectorAll("h1[id], h2[id], h3[id], h4[id]");
+//     heads.forEach((h) => observer.observe(h));
+//     return () => observer.disconnect();
+//   }, [topic]);
+
+//   // 4. Parse TOC from HTML
+//   const toc = useMemo(() => {
+//     if (!topic?.content_html) return [];
+//     const temp = document.createElement("div");
+//     temp.innerHTML = decodeHtml(topic.content_html);
+//     const headings = temp.querySelectorAll("h1, h2, h3, h4");
+//     return Array.from(headings).map((h, idx) => ({
+//       id: (h.textContent || "").toLowerCase().trim().replace(/\s+/g, "-").replace(/[^\w-]/g, "") + "-" + idx,
+//       text: h.textContent,
+//       level: Number(h.tagName.replace("H", ""))
+//     }));
+//   }, [topic]);
+
+//   // 5. Video Embed Helper
+//   const videoEmbedUrl = useMemo(() => {
+//     if (!topic?.video_url) return null;
+//     const match = topic.video_url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=))([\w-]{10,12})/);
+//     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+//   }, [topic?.video_url]);
+
+//   // 6. Back to Top Logic
+//   useEffect(() => {
+//     const onScroll = () => setShowBackToTop(window.scrollY > 400);
+//     window.addEventListener("scroll", onScroll, { passive: true });
+//     return () => window.removeEventListener("scroll", onScroll);
+//   }, []);
+
+//   // LOADING STATE
+//   if (loading) {
+//     return (
+//       <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
+//         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+//         <p className="text-gray-500 animate-pulse font-medium">Loading knowledge...</p>
+//       </div>
+//     );
+//   }
+
+//   // NOT FOUND STATE
+//   if (!topic) {
+//     return (
+//       <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
+//         <h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Topic not found</h2>
+//         <button onClick={() => navigate("/courses")} className="text-blue-500 hover:underline">← Return to courses</button>
+//       </div>
+//     );
+//   }
+
+//   // --- RENDER ---
+//   return (
+//     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0B0F15]' : 'bg-gray-50'}`}>
+//       <ReadingProgress theme={theme} />
+
+//       <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+//         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 xl:gap-14">
+
+//           {/* LEFT COLUMN: Content */}
+//           <main className="lg:col-span-8 w-full">
+
+//             {/* Header */}
+//             <motion.header
+//               initial={{ opacity: 0, y: 20 }}
+//               animate={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.6 }}
+//               className="mb-12"
+//             >
+//               <div className="flex items-center gap-3 mb-6">
+//                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border 
+//                   ${theme === 'dark'
+//                     ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+//                     : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+//                   {topic.course_detail?.title || "Topic"}
+//                 </span>
+//                 <span className={`text-sm flex items-center gap-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+//                   <FiClock size={14} /> {new Date(topic.created_at).toLocaleDateString()}
+//                 </span>
+//               </div>
+
+//               <h1 className={`text-3xl md:text-5xl font-black tracking-tight leading-tight mb-6 
+//                  ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+//                 {topic.title}
+//               </h1>
+
+//               {topic.description && (
+//                 <p className={`text-xl font-light leading-relaxed 
+//                    ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+//                   {topic.description}
+//                 </p>
+//               )}
+//             </motion.header>
+
+//             {/* Video Section */}
+//             {videoEmbedUrl && (
+//               <motion.div
+//                 initial={{ opacity: 0, y: 20 }}
+//                 animate={{ opacity: 1, y: 0 }}
+//                 transition={{ duration: 0.6, delay: 0.1 }}
+//                 className="mb-14 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 aspect-video"
+//               >
+//                 <iframe
+//                   src={videoEmbedUrl}
+//                   className="w-full h-full"
+//                   title="Topic Video"
+//                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+//                   allowFullScreen
+//                 />
+//               </motion.div>
+//             )}
+
+//             {/* Main Article Content */}
+//             <motion.div
+//               initial={{ opacity: 0 }}
+//               animate={{ opacity: 1 }}
+//               transition={{ duration: 0.8, delay: 0.2 }}
+//               className="min-h-[200px]"
+//             >
+//               <ContentRenderer htmlContent={topic.content_html} theme={theme} />
+//             </motion.div>
+
+//             {/* Footer Navigation */}
+//             <div className={`mt-16 pt-8 border-t flex justify-between items-center ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
+//               <button
+//                 onClick={() => navigate(`/courses/${topic.course_detail?.id || ''}`)}
+//                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+//                    ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+//               >
+//                 <FiArrowLeft /> Back to Course
+//               </button>
+
+//               <button
+//                 onClick={() => {
+//                   navigator.clipboard.writeText(window.location.href);
+//                   toast.success("Link copied!");
+//                 }}
+//                 className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+//               >
+//                 <FiShare2 />
+//               </button>
+//             </div>
+//           </main>
+
+//           {/* RIGHT COLUMN: Sidebar (Sticky) */}
+//           <aside className="hidden lg:block lg:col-span-4 relative">
+//             <div className="sticky top-28 space-y-8">
+
+//               <TableOfContents toc={toc} activeId={activeId} theme={theme} />
+
+//               {/* Recommendations */}
+//               <div className={`p-6 rounded-2xl border transition-colors
+//                  ${theme === 'dark'
+//                   ? 'bg-gray-900/40 border-gray-800'
+//                   : 'bg-white border-gray-200 shadow-sm'}`}
+//               >
+//                 <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2
+//                    ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+//                   <FiArrowRight className="text-purple-500" /> Recommended
+//                 </h4>
+
+//                 {recLoading ? (
+//                   <div className="py-4 text-center text-sm text-gray-500">Loading...</div>
+//                 ) : recommended.length === 0 ? (
+//                   <div className="py-2 text-sm text-gray-500 italic">No recommendations yet.</div>
+//                 ) : (
+//                   <div className="space-y-4">
+//                     {recommended.map((rec, i) => (
+//                       <div
+//                         key={i}
+//                         onClick={() => navigate(rec.slug ? `/topics/slug/${rec.slug}` : `/topics/${rec.id}`)}
+//                         className={`group cursor-pointer p-3 rounded-xl transition-all border
+//                           ${theme === 'dark'
+//                             ? 'hover:bg-gray-800 border-transparent hover:border-gray-700'
+//                             : 'hover:bg-indigo-50 border-transparent hover:border-indigo-100'}`}
+//                       >
+//                         <h5 className={`text-sm font-semibold mb-1 group-hover:text-blue-500 transition-colors
+//                            ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+//                           {rec.title}
+//                         </h5>
+//                         <p className="text-xs text-gray-500 line-clamp-2">{rec.description}</p>
+//                       </div>
+//                     ))}
+//                   </div>
+//                 )}
+//               </div>
+
+//             </div>
+//           </aside>
+
+//         </div>
+//       </div>
+
+//       {/* Back to Top */}
+//       <motion.button
+//         initial={{ opacity: 0, scale: 0.8 }}
+//         animate={{ opacity: showBackToTop ? 1 : 0, scale: showBackToTop ? 1 : 0.8 }}
+//         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+//         className={`fixed right-8 bottom-8 z-50 p-4 rounded-full shadow-2xl transition-transform hover:scale-110 focus:outline-none
+//            ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-indigo-600 text-white'}`}
+//       >
+//         <FiArrowUp size={20} />
+//       </motion.button>
+
+//     </div>
+//   );
+// }
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion";
-import { FiClock, FiCopy, FiCheck, FiBook, FiVideo, FiArrowLeft } from "react-icons/fi";
+import { motion, useScroll, useSpring } from "framer-motion";
+import {
+  FiClock, FiCopy, FiCheck, FiBook, FiVideo,
+  FiArrowLeft, FiShare2, FiArrowRight, FiArrowUp
+} from "react-icons/fi";
 import toast from "react-hot-toast";
 import client from "../../auth/api";
+import { useTheme } from "../../../context/ThemeContext";
 
+// Syntax Highlighting
 import hljs from "highlight.js";
 import "highlight.js/styles/atom-one-dark.css";
 
+// HTML Parsing
 import DOMPurify from "dompurify";
-import parse, { Element } from "html-react-parser";
+import parse, { Element, domToReact } from "html-react-parser";
 
-// 1. Helper: Decode HTML Entities
+const ReadingProgress = ({ theme }) => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  const gradientColor = theme === "dark"
+    ? "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500"
+    : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600";
+
+  return (
+    <motion.div
+      className={`fixed top-0 left-0 right-0 h-1.5 ${gradientColor} origin-left z-[100]`}
+      style={{ scaleX }}
+    />
+  );
+};
+
+/* ==========================================================================
+   UTILITY HELPERS
+   ========================================================================== */
+
 function decodeHtml(html) {
   if (!html) return "";
   const txt = document.createElement("textarea");
@@ -489,28 +1246,76 @@ function decodeHtml(html) {
   return txt.value;
 }
 
-// 2. Helper: Recursive Text Extractor
-function extractTextFromDomNode(node) {
+function extractTextFromDomNode(node, preserveFormatting = false) {
   if (!node) return "";
   if (node.type === "text") return node.data;
+  
+  // If this is an element node, we need to serialize it as HTML text
+  if (node.type === "tag" || (node instanceof Element)) {
+    // This means we have actual HTML elements that should be shown as code
+    
+    
+    // Use domToReact or similar to get the actual HTML string
+    if (node.name) {
+      // Reconstruct the HTML tag as text
+      let html = `<${node.name}`;
+      
+      // Add attributes
+      if (node.attribs && typeof node.attribs === 'object') {
+        for (const [key, value] of Object.entries(node.attribs)) {
+          if (key !== 'class' || !value.includes('language-')) {
+            html += ` ${key}="${value}"`;
+          }
+        }
+      }
+      html += '>';
+      
+      // Add children
+      if (node.children && node.children.length > 0) {
+        html += node.children.map(child => extractTextFromDomNode(child, true)).join('');
+      }
+      
+      // Close tag
+      html += `</${node.name}>`;
+      return html;
+    }
+  }
+  
   if (node.children && node.children.length > 0) {
-    return node.children.map(extractTextFromDomNode).join("");
+    return node.children.map(child => extractTextFromDomNode(child, preserveFormatting)).join(preserveFormatting ? "" : "");
   }
   return "";
 }
 
-// 3. Helper: Clean Indentation (non-breaking spaces)
+// Helper to decode HTML entities (including nested encoding)
+function decodeHtmlEntities(text) {
+  if (!text) return '';
+  const textarea = document.createElement('textarea');
+  
+  // Decode multiple times to handle double-encoding
+  let decoded = text;
+  let previousDecoded = '';
+  
+  // Keep decoding until no more changes occur (max 3 iterations)
+  for (let i = 0; i < 3 && decoded !== previousDecoded; i++) {
+    previousDecoded = decoded;
+    textarea.innerHTML = decoded;
+    decoded = textarea.value;
+  }
+  
+  return decoded;
+}
+
 function cleanCodeString(rawString) {
   if (!rawString) return "";
   return rawString.replace(/\u00A0/g, " ").replace(/&nbsp;/g, " ");
 }
 
-// 4. Helper: Inject IDs for TOC
 function injectHeadingIDs(html) {
   if (!html) return "";
   const temp = document.createElement("div");
   temp.innerHTML = html;
-  const headings = temp.querySelectorAll("h2, h3");
+  const headings = temp.querySelectorAll("h1, h2, h3, h4, h5, h6");
   headings.forEach((h, idx) => {
     const id = (h.textContent || "")
       .toLowerCase()
@@ -522,29 +1327,62 @@ function injectHeadingIDs(html) {
   return temp.innerHTML;
 }
 
-// 5. Component: CodeBlock
+function convertInlineStyledParagraphsToHeadings(html) {
+  if (!html) return "";
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+  const paragraphs = temp.querySelectorAll("p[style]");
+  
+  paragraphs.forEach((p) => {
+    const style = p.getAttribute("style");
+    if (!style) return;
+    
+    const sizeMatch = style.match(/font-size:\s*(\d+)px/i);
+    if (!sizeMatch) return;
+    
+    const size = parseInt(sizeMatch[1]);
+    let level = null;
+    
+    if (size >= 32) level = "h1";
+    else if (size >= 26) level = "h2";
+    else if (size >= 22) level = "h3";
+    else if (size >= 18) level = "h4";
+    
+    if (level) {
+      const h = document.createElement(level);
+      h.innerHTML = p.innerHTML;
+      p.replaceWith(h);
+    }
+  });
+  
+  return temp.innerHTML;
+}
+
+/* ==========================================================================
+   CODE BLOCK COMPONENT
+   ========================================================================== */
+
 const CodeBlock = ({ code, language }) => {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef(null);
 
   useEffect(() => {
     if (codeRef.current && code) {
-      // If language is provided (e.g. 'python'), use it. Else auto-detect.
-      // We strip 'language-' prefix if it exists
-      const cleanLang = language ? language.replace('language-', '') : null;
-      
+      let cleanLang = language;
+      if (cleanLang && cleanLang.startsWith("language-")) {
+        cleanLang = cleanLang.replace("language-", "");
+      }
+
       try {
         const result = cleanLang && hljs.getLanguage(cleanLang)
           ? hljs.highlight(code, { language: cleanLang })
           : hljs.highlightAuto(code);
-          
+
         codeRef.current.innerHTML = result.value;
-        codeRef.current.classList.add(`language-${result.language}`);
+        codeRef.current.classList.add("hljs");
       } catch (e) {
         console.error("Highlighting error:", e);
-        // Fallback if language not found
-        const result = hljs.highlightAuto(code);
-        codeRef.current.innerHTML = result.value;
+        codeRef.current.textContent = code;
       }
     }
   }, [code, language]);
@@ -553,164 +1391,446 @@ const CodeBlock = ({ code, language }) => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      toast.success("Code copied!");
       setTimeout(() => setCopied(false), 2000);
+      toast.success("Code copied!");
     } catch (err) {
-      toast.error("Failed to copy", err);
+      console.error("Failed to copy", err);
     }
   };
 
   return (
-    <div className="my-6 rounded-xl overflow-hidden bg-[#1e1e1e] shadow-2xl border border-gray-700/50 group text-left">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-gray-700">
-        <div className="flex gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-          <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-          <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-        </div>
+    <motion.div
+      className="my-8 rounded-2xl overflow-hidden bg-[#0d1117] border border-gray-700/50 shadow-2xl group ring-1 ring-white/10"
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      viewport={{ once: true }}
+    >
+      <div className="flex items-center justify-between px-5 py-3 bg-[#161b22] border-b border-gray-800 select-none">
         <div className="flex items-center gap-3">
-            {language && <span className="text-xs text-gray-500 uppercase font-mono">{language.replace('language-', '')}</span>}
-            <button
-            onClick={handleCopy}
-            className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-2 py-1 rounded"
-            >
-            {copied ? <FiCheck className="text-green-400" size={14} /> : <FiCopy size={14} />}
-            </button>
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+            <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+          </div>
+          {language && (
+            <span className="text-xs font-mono text-gray-400 uppercase opacity-70">
+              {language.replace("language-", "")}
+            </span>
+          )}
         </div>
+
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-300 hover:text-white transition-all bg-white/5 hover:bg-white/15 rounded-lg border border-gray-700/50 hover:border-gray-500"
+        >
+          {copied ? <FiCheck className="text-emerald-400" size={14} /> : <FiCopy size={14} />}
+          {copied ? "COPIED" : "COPY"}
+        </button>
       </div>
-      <div className="relative">
-        <pre className="!m-0 !p-4 !bg-transparent overflow-x-auto">
-          <code ref={codeRef} className="font-mono text-sm leading-relaxed text-gray-300">
+
+      <div className="relative overflow-x-auto">
+        <pre className="m-0 !p-6 !bg-transparent">
+          <code
+            ref={codeRef}
+            className="font-mono text-sm leading-relaxed !text-white !bg-transparent"
+          >
             {code}
           </code>
         </pre>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-// 6. Component: ContentRenderer (The Parsing Logic)
-const ContentRenderer = ({ htmlContent }) => {
-  
+/* ==========================================================================
+   CONTENT RENDERER COMPONENT - COMPLETE FIX FOR HTML CODE BLOCKS
+   ========================================================================== */
+
+const ContentRenderer = ({ htmlContent, theme = "light" }) => {
   const processedHtml = useMemo(() => {
     if (!htmlContent) return "";
-    
-    // A. Decode Entities
+
     let decoded = decodeHtml(htmlContent);
-
-    // B. MERGE ADJACENT CODE BLOCKS (The Fix for fragmented lines)
-    // This regex looks for: </code></pre> followed by <pre ...><code ...>
-    // It replaces the boundary with a newline, effectively merging them into one block.
-    // We use a general regex to catch various attributes TipTap might add.
-    decoded = decoded.replace(/<\/code>\s*<\/pre>\s*<pre[^>]*>\s*<code[^>]*>/gi, "\n");
     
-    // Fallback for pre tags without code tags (older data)
+    // Convert inline-styled paragraphs to proper headings
+    decoded = convertInlineStyledParagraphsToHeadings(decoded);
+    
+    // CRITICAL: Process code blocks to extract and preserve raw HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = decoded;
+    
+    // Find all pre elements
+    const preElements = tempDiv.querySelectorAll('pre');
+    preElements.forEach(pre => {
+      const codeElement = pre.querySelector('code');
+      if (codeElement) {
+        // Get the raw HTML string from the code element
+        let codeContent = codeElement.innerHTML;
+        
+        // Decode any HTML entities (this handles &lt; &gt; etc)
+        const tempDecoder = document.createElement('textarea');
+        tempDecoder.innerHTML = codeContent;
+        let decodedContent = tempDecoder.value;
+        
+        // Check if we have actual HTML tags after decoding
+        if (decodedContent.includes('<') && decodedContent.includes('>')) {
+          // This is HTML code that should be displayed as text
+          // Encode it properly for storage
+          const base64 = btoa(unescape(encodeURIComponent(decodedContent)));
+          pre.setAttribute('data-code-base64', base64);
+          
+          // Also store as escaped for fallback
+          const escaped = decodedContent
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+          pre.setAttribute('data-code-content', escaped);
+          
+          // Update the code element content with the escaped version
+          codeElement.innerHTML = escaped;
+        } else {
+          // Regular code (non-HTML)
+          const textContent = codeElement.textContent || codeElement.innerText || '';
+          const base64 = btoa(unescape(encodeURIComponent(textContent)));
+          pre.setAttribute('data-code-base64', base64);
+          pre.setAttribute('data-code-content', textContent);
+        }
+      }
+    });
+    
+    decoded = tempDiv.innerHTML;
+    
+    // Merge broken code blocks
+    decoded = decoded.replace(/<\/code>\s*<\/pre>\s*<pre[^>]*>\s*<code[^>]*>/gi, "\n");
     decoded = decoded.replace(/<\/pre>\s*<pre[^>]*>/gi, "\n");
-
-    // C. Sanitize
+    
+    // Remove empty paragraphs
+    decoded = decoded.replace(/<p><\/p>/g, "");
+    decoded = decoded.replace(/<p>\s*<\/p>/g, "");
+    
+    // Clean up BlockNote artifacts
+    decoded = decoded.replace(/data-id="[^"]*"/g, "");
+    decoded = decoded.replace(/data-content-type="[^"]*"/g, "");
+    
     const clean = DOMPurify.sanitize(decoded, {
       USE_PROFILES: { html: true },
-      ADD_TAGS: ["iframe", "img"],
-      ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "src", "alt", "class", "id", "style"]
+      ADD_TAGS: ["iframe", "img", "pre", "code", "span", "figure"],
+      ADD_ATTR: [
+        "style", "class", "id", "src", "alt", "allow", "allowfullscreen",
+        "frameborder", "scrolling", "data-language", "data-code-content", 
+        "data-code-base64", "width", "height"
+      ],
+      FORBID_TAGS: ["script", "style"],
+      ALLOWED_URI_REGEXP: /^https?:\/\//i,
+      KEEP_CONTENT: true,
     });
 
-    // D. Add IDs
     return injectHeadingIDs(clean);
   }, [htmlContent]);
 
   const options = {
     replace: (domNode) => {
-      // Find <pre> blocks
+      // Handle Code Blocks (multiline code inside <pre><code>)
       if (domNode instanceof Element && domNode.name === "pre") {
-        
-        // 1. Detect Language Class (e.g. from <code class="language-python">)
-        let language = null;
-        if (domNode.children && domNode.children.length > 0) {
-            const child = domNode.children[0];
-            if (child.name === 'code' && child.attribs && child.attribs.class) {
-                language = child.attribs.class; // e.g., "language-python"
+        const codeNode = domNode.children?.find((c) => c.name === "code");
+
+        if (codeNode) {
+          let language = codeNode.attribs?.class || "plaintext";
+          if (domNode.attribs?.["data-language"]) {
+            language = domNode.attribs["data-language"];
+          }
+
+          let rawCode = null;
+          
+          // Try base64 first (most reliable)
+          if (domNode.attribs?.["data-code-base64"]) {
+            try {
+              rawCode = decodeURIComponent(escape(atob(domNode.attribs["data-code-base64"])));
+            } catch (e) {
+              console.warn("Failed to decode base64 code content", e);
             }
+          }
+          
+          // Fall back to escaped HTML entities
+          if (!rawCode && domNode.attribs?.["data-code-content"]) {
+            rawCode = decodeHtmlEntities(domNode.attribs["data-code-content"]);
+          }
+          
+          // Check if code node has actual HTML element children (not just text)
+          if (!rawCode && codeNode.children) {
+            const hasElementChildren = codeNode.children.some(child => 
+              child.type === 'tag' || (child.name && child.name !== 'text')
+            );
+            
+            if (hasElementChildren) {
+              // This code block contains actual HTML elements - serialize them as text
+              rawCode = extractTextFromDomNode(codeNode, true);
+            } else {
+              // Regular text extraction
+              rawCode = extractTextFromDomNode(codeNode);
+            }
+          }
+          
+          // Last resort: get text content
+          if (!rawCode) {
+            rawCode = extractTextFromDomNode(codeNode);
+          }
+          
+          rawCode = cleanCodeString(rawCode);
+          
+          if (!rawCode.trim()) return null;
+
+          return (
+            <div className="not-prose max-w-full">
+              <CodeBlock code={rawCode} language={language} />
+            </div>
+          );
         }
-
-        // 2. Extract & Clean Text
-        let rawCode = extractTextFromDomNode(domNode);
-        rawCode = cleanCodeString(rawCode);
-
-        if (!rawCode.trim()) return;
-
-        // 3. Render Custom Block
-        return <CodeBlock code={rawCode} language={language} />;
       }
 
-      if (domNode instanceof Element && domNode.name === 'img') {
-          return <img 
-              src={domNode.attribs.src} 
-              alt={domNode.attribs.alt || ''} 
-              className="rounded-xl shadow-lg my-6 max-w-full h-auto" 
-          />;
+      // Handle Inline Code (code NOT inside pre)
+      if (domNode instanceof Element && domNode.name === "code" && domNode.parent?.name !== "pre") {
+        const codeText = extractTextFromDomNode(domNode);
+        
+        return (
+          <code className={`
+            px-1.5 py-0.5 rounded text-sm font-mono whitespace-pre-wrap
+            ${theme === 'dark' 
+              ? 'bg-gray-800 text-pink-400 border border-gray-700' 
+              : 'bg-gray-100 text-pink-600 border border-gray-200'}
+          `}>
+            {codeText}
+          </code>
+        );
+      }
+
+      // Handle Images
+      if (domNode instanceof Element && domNode.name === "img") {
+        return (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="my-10"
+          >
+            <img
+              src={domNode.attribs.src}
+              alt={domNode.attribs.alt || "Content Image"}
+              className="rounded-2xl shadow-xl w-full border border-gray-200 dark:border-gray-800"
+              loading="lazy"
+            />
+          </motion.div>
+        );
+      }
+
+      // Handle Headings
+      if (domNode instanceof Element && /^h[1-6]$/.test(domNode.name)) {
+        const HeadingTag = domNode.name;
+        return (
+          <HeadingTag
+            id={domNode.attribs?.id}
+            className={`
+              ${HeadingTag === 'h1' ? 'text-4xl font-black mb-6 mt-12' : ''}
+              ${HeadingTag === 'h2' ? 'text-3xl font-bold mb-5 mt-10' : ''}
+              ${HeadingTag === 'h3' ? 'text-2xl font-semibold mb-4 mt-8' : ''}
+              ${HeadingTag === 'h4' ? 'text-xl font-semibold mb-3 mt-6' : ''}
+              ${HeadingTag === 'h5' ? 'text-lg font-semibold mb-2 mt-4' : ''}
+              ${HeadingTag === 'h6' ? 'text-base font-semibold mb-2 mt-4' : ''}
+              scroll-mt-32
+              ${theme === 'dark' ? 'text-white' : 'text-gray-900'}
+            `}
+          >
+            {domToReact(domNode.children, options)}
+          </HeadingTag>
+        );
+      }
+
+      // Handle Unordered Lists
+      if (domNode instanceof Element && domNode.name === "ul") {
+        return (
+          <ul
+            className={`
+              my-6 space-y-2 list-disc pl-6
+              ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
+              marker:text-blue-500
+            `}
+          >
+            {domToReact(domNode.children, options)}
+          </ul>
+        );
+      }
+
+      // Handle Ordered Lists
+      if (domNode instanceof Element && domNode.name === "ol") {
+        return (
+          <ol
+            className={`
+              my-6 space-y-2 list-decimal pl-6
+              ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
+              marker:text-blue-500
+            `}
+          >
+            {domToReact(domNode.children, options)}
+          </ol>
+        );
+      }
+
+      // Handle List Items
+      if (domNode instanceof Element && domNode.name === "li") {
+        return (
+          <li className="leading-relaxed pl-2">
+            {domToReact(domNode.children, options)}
+          </li>
+        );
+      }
+
+      // Handle Paragraphs
+      if (domNode instanceof Element && domNode.name === "p") {
+        return (
+          <p className={`
+            leading-[1.8] mb-6 text-lg
+            ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
+          `}>
+            {domToReact(domNode.children, options)}
+          </p>
+        );
+      }
+
+      // Handle Blockquotes
+      if (domNode instanceof Element && domNode.name === "blockquote") {
+        return (
+          <blockquote className={`
+            my-6 border-l-4 border-blue-500 pl-6 py-2 rounded-r-lg
+            ${theme === 'dark' 
+              ? 'bg-blue-500/10 text-gray-300' 
+              : 'bg-blue-50 text-gray-700'}
+            italic
+          `}>
+            {domToReact(domNode.children, options)}
+          </blockquote>
+        );
+      }
+
+      // Handle Links
+      if (domNode instanceof Element && domNode.name === "a") {
+        return (
+          <a
+            href={domNode.attribs.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-600 underline decoration-blue-500/30 hover:decoration-blue-600 underline-offset-2 transition-colors"
+          >
+            {domToReact(domNode.children, options)}
+          </a>
+        );
+      }
+
+      // Handle Bold
+      if (domNode instanceof Element && (domNode.name === "strong" || domNode.name === "b")) {
+        return (
+          <strong className="font-bold">
+            {domToReact(domNode.children, options)}
+          </strong>
+        );
+      }
+
+      // Handle Italic
+      if (domNode instanceof Element && (domNode.name === "em" || domNode.name === "i")) {
+        return (
+          <em className="italic">
+            {domToReact(domNode.children, options)}
+          </em>
+        );
+      }
+
+      // Handle horizontal rules
+      if (domNode instanceof Element && domNode.name === "hr") {
+        return (
+          <hr className={`my-8 border-t ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`} />
+        );
       }
     },
   };
 
   return (
-    <div className="
-      prose prose-lg max-w-none w-full dark:prose-invert
-      prose-headings:font-bold prose-headings:tracking-tight
-      prose-p:leading-relaxed prose-p:text-gray-600 dark:prose-p:text-gray-300
-      prose-li:text-gray-600 dark:prose-li:text-gray-300
-      prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400
-      prose-pre:bg-transparent prose-pre:m-0 prose-pre:p-0
-    ">
+    <article className="max-w-none w-full">
       {parse(processedHtml, options)}
-    </div>
+    </article>
   );
 };
 
-/* ==========================================================================
-   COMPONENT: TableOfContents
-   ========================================================================== */
-const TableOfContents = React.memo(({ toc, activeId }) => {
+const TableOfContents = React.memo(({ toc, activeId, theme }) => {
   if (!toc || toc.length === 0) return null;
+
   return (
-    <div className="sticky top-24">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-          On This Page
-        </h4>
-        <nav className="space-y-1">
-          {toc.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className={`block text-sm py-2 px-3 rounded-lg transition-all ${
-                activeId === item.id
-                  ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-              } ${item.level === 3 ? "ml-4 border-l-2 border-gray-200 dark:border-gray-700 pl-3" : ""}`}
-            >
-              {item.text}
-            </a>
-          ))}
-        </nav>
-      </div>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+      className={`p-6 rounded-2xl border backdrop-blur-md transition-colors
+        ${theme === "dark"
+          ? "bg-gray-900/80 border-gray-700/50"
+          : "bg-white/80 border-indigo-100/50 shadow-lg shadow-indigo-100/50"}`
+      }
+    >
+      <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <FiBook className="text-blue-500" />
+        Contents
+      </h4>
+      <nav className="space-y-1 relative">
+        <div className={`absolute left-[5px] top-2 bottom-2 w-px ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+        {toc.map((item) => (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className={`
+               block pl-4 py-2 text-sm transition-all relative
+               ${item.level === 3 ? "ml-4" : ""}
+               ${activeId === item.id
+                ? "text-blue-500 font-semibold"
+                : theme === 'dark' ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-900"
+              }
+            `}
+          >
+            {activeId === item.id && (
+              <motion.div
+                layoutId="toc-active"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-full bg-blue-500 rounded-full"
+              />
+            )}
+            {item.text}
+          </a>
+        ))}
+      </nav>
+    </motion.div>
   );
 });
 TableOfContents.displayName = "TableOfContents";
 
 /* ==========================================================================
-   MAIN PAGE: TopicDetail
+   MAIN PAGE COMPONENT
    ========================================================================== */
 export default function TopicDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+
   const [topic, setTopic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState("");
+  const [recommended, setRecommended] = useState([]);
+  const [recLoading, setRecLoading] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
+  // 1. Fetch Topic
   useEffect(() => {
     let mounted = true;
     const fetchTopic = async () => {
@@ -719,7 +1839,7 @@ export default function TopicDetail() {
         const res = await client.get(`/api/topics/slug/${slug}/`);
         if (mounted) setTopic(res.data);
       } catch (err) {
-        console.error("Failed to fetch topic:", err);
+        console.error("Topic load failed:", err);
         toast.error("Failed to load topic");
       } finally {
         if (mounted) setLoading(false);
@@ -729,6 +1849,28 @@ export default function TopicDetail() {
     return () => { mounted = false; };
   }, [slug]);
 
+  // 2. Fetch Recommended
+  useEffect(() => {
+    if (!topic?.id) return;
+    let mounted = true;
+    const fetchRecommended = async () => {
+      setRecLoading(true);
+      try {
+        const res = await client.get(`/api/topics/${topic.id}/ai-recommended/`);
+        if (mounted) {
+          setRecommended(Array.isArray(res.data) ? res.data : (res.data.results || []));
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (mounted) setRecLoading(false);
+      }
+    };
+    fetchRecommended();
+    return () => { mounted = false; };
+  }, [topic?.id]);
+
+  // 3. Scroll Spy for TOC
   useEffect(() => {
     if (!topic) return;
     const observer = new IntersectionObserver(
@@ -737,117 +1879,268 @@ export default function TopicDetail() {
           if (entry.isIntersecting) setActiveId(entry.target.id);
         });
       },
-      { rootMargin: "0px 0px -80% 0px" }
+      { rootMargin: "0px 0px -60% 0px" }
     );
-    const heads = document.querySelectorAll("h2[id], h3[id]");
+    const heads = document.querySelectorAll("h1[id], h2[id], h3[id], h4[id]");
     heads.forEach((h) => observer.observe(h));
     return () => observer.disconnect();
   }, [topic]);
 
+  // 4. Parse TOC from HTML
   const toc = useMemo(() => {
     if (!topic?.content_html) return [];
     const temp = document.createElement("div");
     temp.innerHTML = decodeHtml(topic.content_html);
-    const headings = temp.querySelectorAll("h2, h3");
+    const headings = temp.querySelectorAll("h1, h2, h3, h4");
     return Array.from(headings).map((h, idx) => ({
       id: (h.textContent || "").toLowerCase().trim().replace(/\s+/g, "-").replace(/[^\w-]/g, "") + "-" + idx,
       text: h.textContent,
-      level: h.tagName === "H2" ? 2 : 3,
+      level: Number(h.tagName.replace("H", ""))
     }));
   }, [topic]);
 
+  // 5. Video Embed Helper - Supports YouTube and Vimeo
   const videoEmbedUrl = useMemo(() => {
     if (!topic?.video_url) return null;
-    const match = topic.video_url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=))([\w-]{10,12})/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+    
+    const url = topic.video_url.trim();
+    
+    // YouTube patterns
+    const youtubeMatch = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{10,12})/);
+    if (youtubeMatch) {
+      return {
+        type: 'youtube',
+        url: `https://www.youtube.com/embed/${youtubeMatch[1]}?rel=0&modestbranding=1`
+      };
+    }
+    
+    // Vimeo patterns
+    const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+    if (vimeoMatch) {
+      return {
+        type: 'vimeo',
+        url: `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
+      };
+    }
+    
+    return null;
   }, [topic?.video_url]);
 
+  // 6. Back to Top Logic
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // LOADING STATE
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 animate-pulse font-medium">Loading knowledge...</p>
       </div>
     );
   }
 
+  // NOT FOUND STATE
   if (!topic) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <p className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Topic not found</p>
-          <Link to="/topics" className="text-indigo-600 hover:underline">Go back</Link>
-        </div>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
+        <h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Topic not found</h2>
+        <button onClick={() => navigate("/courses")} className="text-blue-500 hover:underline">← Return to courses</button>
       </div>
     );
   }
 
+  // --- RENDER ---
   return (
-    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="max-w-[1400px] mx-auto px-6 py-16 relative z-10 w-full">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Link to="/topics" className="inline-flex items-center gap-2 text-indigo-100 hover:text-white text-sm font-medium w-fit mb-6 transition-colors">
-              <FiArrowLeft /> Back to Topics
-            </Link>
-            
-            {topic.course_detail?.title && (
-              <span className="inline-flex items-center gap-2 text-indigo-100 font-medium text-xs tracking-wider uppercase bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                <FiBook /> {topic.course_detail.title}
-              </span>
-            )}
-            
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mt-6 mb-4">
-              {topic.title}
-            </h1>
-            
-            {topic.description && (
-              <p className="text-lg text-indigo-100 max-w-3xl leading-relaxed">
-                {topic.description}
-              </p>
-            )}
-            
-            <div className="flex items-center gap-4 mt-6 text-sm text-indigo-200">
-              <span className="flex items-center gap-2">
-                <FiClock /> {topic.created_at ? new Date(topic.created_at).toLocaleDateString() : "Recently"}
-              </span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0B0F15]' : 'bg-gray-50'}`}>
+      <ReadingProgress theme={theme} />
 
-      <div className="max-w-[1400px] mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 w-full">
-        <div className="lg:col-span-8 w-full">
-          {topic.content_html ? (
-            <ContentRenderer htmlContent={topic.content_html} />
-          ) : (
-            <div className="text-center py-20 text-gray-500 dark:text-gray-400 italic">
-              No content available for this topic.
-            </div>
-          )}
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 xl:gap-14">
 
-          {videoEmbedUrl && (
-            <div className="mt-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 md:p-8 shadow-sm">
-              <h3 className="text-2xl font-bold flex items-center gap-3 mb-6 text-gray-900 dark:text-gray-100">
-                <FiVideo className="text-indigo-600" /> Video Lesson
-              </h3>
-              <div className="aspect-video rounded-xl overflow-hidden shadow-lg bg-black">
-                <iframe 
-                  src={videoEmbedUrl} 
-                  className="w-full h-full" 
-                  title="Video Lesson" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen 
-                />
+          {/* LEFT COLUMN: Content */}
+          <main className="lg:col-span-8 w-full">
+
+            {/* Header */}
+            <motion.header
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border 
+                  ${theme === 'dark'
+                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                    : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                  {topic.course_detail?.title || "Topic"}
+                </span>
+                <span className={`text-sm flex items-center gap-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <FiClock size={14} /> {new Date(topic.created_at).toLocaleDateString()}
+                </span>
               </div>
-            </div>
-          )}
-        </div>
 
-        <aside className="lg:col-span-4 hidden lg:block">
-          <TableOfContents toc={toc} activeId={activeId} />
-        </aside>
+              <h1 className={`text-3xl md:text-5xl font-black tracking-tight leading-tight mb-6 
+                 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {topic.title}
+              </h1>
+
+              {topic.description && (
+                <p className={`text-xl font-light leading-relaxed 
+                   ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {topic.description}
+                </p>
+              )}
+            </motion.header>
+
+           
+
+            {/* Main Article Content */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="min-h-[200px]"
+            >
+              <ContentRenderer htmlContent={topic.content_html} theme={theme} />
+            </motion.div>
+             {/* Video Section */}
+             <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="mb-14"
+            >
+              <div className={`rounded-2xl overflow-hidden border transition-colors
+                ${theme === 'dark' 
+                  ? 'bg-gray-900/50 border-gray-800' 
+                  : 'bg-white border-gray-200'}`}
+              >
+                <div className={`px-6 py-4 border-b flex items-center gap-2
+                  ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}
+                >
+                  <FiVideo className="text-blue-500" size={18} />
+                  <h3 className={`font-bold text-lg
+                    ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    Video Tutorial
+                  </h3>
+                </div>
+                
+                {videoEmbedUrl ? (
+                  <div className="relative aspect-video bg-black">
+                    <iframe
+                      src={videoEmbedUrl.url}
+                      className="w-full h-full"
+                      title="Topic Video Tutorial"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      frameBorder="0"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video flex flex-col items-center justify-center p-12">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4
+                      ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                      <FiVideo className={`text-3xl ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`} size={32} />
+                    </div>
+                    <p className={`text-center font-medium
+                      ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No video for this topic
+                    </p>
+                    <p className={`text-sm text-center mt-2
+                      ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Check back later for video content
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Footer Navigation */}
+            <div className={`mt-16 pt-8 border-t flex justify-between items-center ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
+              <button
+                onClick={() => navigate(`/courses/${topic.course_detail?.id || ''}`)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+                   ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+              >
+                <FiArrowLeft /> Back to Course
+              </button>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success("Link copied!");
+                }}
+                className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+              >
+                <FiShare2 />
+              </button>
+            </div>
+          </main>
+
+          {/* RIGHT COLUMN: Sidebar (Sticky) */}
+          <aside className="hidden lg:block lg:col-span-4 relative">
+            <div className="sticky top-28 space-y-8">
+
+              <TableOfContents toc={toc} activeId={activeId} theme={theme} />
+
+              {/* Recommendations */}
+              <div className={`p-6 rounded-2xl border transition-colors
+                 ${theme === 'dark'
+                  ? 'bg-gray-900/40 border-gray-800'
+                  : 'bg-white border-gray-200 shadow-sm'}`}
+              >
+                <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2
+                   ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <FiArrowRight className="text-purple-500" /> Recommended
+                </h4>
+
+                {recLoading ? (
+                  <div className="py-4 text-center text-sm text-gray-500">Loading...</div>
+                ) : recommended.length === 0 ? (
+                  <div className="py-2 text-sm text-gray-500 italic">No recommendations yet.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {recommended.map((rec, i) => (
+                      <div
+                        key={i}
+                        onClick={() => navigate(rec.slug ? `/topics/slug/${rec.slug}` : `/topics/${rec.id}`)}
+                        className={`group cursor-pointer p-3 rounded-xl transition-all border
+                          ${theme === 'dark'
+                            ? 'hover:bg-gray-800 border-transparent hover:border-gray-700'
+                            : 'hover:bg-indigo-50 border-transparent hover:border-indigo-100'}`}
+                      >
+                        <h5 className={`text-sm font-semibold mb-1 group-hover:text-blue-500 transition-colors
+                           ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {rec.title}
+                        </h5>
+                        <p className="text-xs text-gray-500 line-clamp-2">{rec.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </aside>
+
+        </div>
       </div>
+
+      {/* Back to Top */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: showBackToTop ? 1 : 0, scale: showBackToTop ? 1 : 0.8 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className={`fixed right-8 bottom-8 z-50 p-4 rounded-full shadow-2xl transition-transform hover:scale-110 focus:outline-none
+           ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-indigo-600 text-white'}`}
+      >
+        <FiArrowUp size={20} />
+      </motion.button>
+
     </div>
   );
 }
