@@ -138,5 +138,8 @@ export async function loginRequest({ email, password }) {
 export async function registerRequest(payload) {
   return client.post("/register/", payload);
 }
+export const refreshRequest = async () => {
+  return axios.post("/auth/refresh/");
+};
 
 export default client;
