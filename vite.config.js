@@ -18,6 +18,7 @@ export default defineConfig({
       darkMode: 'class',
     }),
   ],
+  base: "/",
   resolve: {
     dedupe: [
       "prosemirror-state",
