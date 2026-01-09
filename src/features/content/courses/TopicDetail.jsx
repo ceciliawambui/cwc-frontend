@@ -1413,11 +1413,11 @@ const CodeBlock = ({ code, language }) => {
             <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
             <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
           </div>
-          {language && (
+          {/* {language && (
             <span className="text-xs font-mono text-gray-400 uppercase opacity-70">
               {language.replace("language-", "")}
             </span>
-          )}
+          )} */}
         </div>
 
         <button
