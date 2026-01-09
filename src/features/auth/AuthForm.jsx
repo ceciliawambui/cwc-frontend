@@ -26,12 +26,19 @@ export default function AuthForm({ mode = "login", onSuccess }) {
 
     try {
       if (mode === "login") {
-        await login(form.email, form.password);
+        // Login - validate fields first
+        if (!form.email || !form.password) {
+          toast.error("Please enter both email/username and password");
+          setLoading(false);
+          return;
+        }
+
+        await login(form.email.trim(), form.password);
 
         const loggedUser = JSON.parse(localStorage.getItem("user"));
         toast.success("Welcome back!");
 
-        if (loggedUser?.role === "admin" || loggedUser?.is_admin) {
+        if (loggedUser?.role === "admin" || loggedUser?.is_admin || loggedUser?.is_staff) {
           nav("/admin");
         } else {
           nav("/dashboard");
@@ -39,27 +46,64 @@ export default function AuthForm({ mode = "login", onSuccess }) {
 
         onSuccess?.(loggedUser);
       } else {
+        // Registration
         if (form.password !== form.confirm_password) {
           toast.error("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        // Validate required fields
+        if (!form.email || !form.password || !form.name) {
+          toast.error("Please fill in all required fields");
+          setLoading(false);
           return;
         }
 
         const payload = {
-          username: form.email,
+          username: form.email, // Use email as username
           email: form.email,
           password: form.password,
+          password_confirm: form.confirm_password, // Match backend field name
           name: form.name,
         };
 
         const { registerRequest } = await import("./api");
-        await registerRequest(payload);
+        const response = await registerRequest(payload);
 
-        toast.success("Account created successfully!");
+        console.log("Registration successful:", response.data);
+        
+        toast.success("Account created successfully! Please log in.");
+        
+        // Redirect to login page
+        nav("/login");
+        
         onSuccess?.();
       }
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Something went wrong.");
-      console.error(err);
+      console.error("Auth Error:", err);
+      
+      // Handle specific error messages from backend
+      if (err?.response?.data) {
+        const errorData = err.response.data;
+        
+        // Handle field-specific errors
+        if (errorData.username) {
+          toast.error(`Username: ${errorData.username[0]}`);
+        } else if (errorData.email) {
+          toast.error(`Email: ${errorData.email[0]}`);
+        } else if (errorData.password) {
+          toast.error(`Password: ${errorData.password[0]}`);
+        } else if (errorData.detail) {
+          toast.error(errorData.detail);
+        } else if (errorData.non_field_errors) {
+          toast.error(errorData.non_field_errors[0]);
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+      } else {
+        toast.error("Network error. Please check your connection.");
+      }
     } finally {
       setLoading(false);
     }
@@ -80,31 +124,23 @@ export default function AuthForm({ mode = "login", onSuccess }) {
           placeholder="Full name"
           value={form.name}
           onChange={onChange}
+          required
           className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
                      bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm focus:ring-2 focus:ring-indigo-400
                      text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition"
         />
       )}
 
-      {/* <input
-        type="email"
+      <input
+        type="text"
         name="email"
-        placeholder="Email address"
+        placeholder={mode === "login" ? "Email or Username" : "Email address"}
         value={form.email}
         onChange={onChange}
+        required
         className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
                    bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
                    text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
-      /> */}
-      <input
-        type="text"  // Changed from "email" to "text"
-        name="email"  // Keep the name as "email" since that's what your form uses
-        placeholder="Email or Username"  // Updated placeholder
-        value={form.email}
-        onChange={onChange}
-        className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
-             bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
-             text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
       />
 
       <input
@@ -113,6 +149,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         placeholder="Password"
         value={form.password}
         onChange={onChange}
+        required
         className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
                    bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
                    text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
@@ -125,6 +162,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
           placeholder="Confirm password"
           value={form.confirm_password}
           onChange={onChange}
+          required
           className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
                      bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
                      text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
@@ -135,7 +173,8 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         type="submit"
         disabled={loading}
         className="w-full py-3 mt-2 rounded-xl font-semibold text-white text-lg 
-                   bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:opacity-90 transition-all"
+                   bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:opacity-90 transition-all
+                   disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? <Loader size={20} /> : mode === "login" ? "Sign In" : "Create Account"}
       </button>

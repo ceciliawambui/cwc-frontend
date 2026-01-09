@@ -35,17 +35,16 @@ import { ShieldCheck, User as UserIcon } from "lucide-react";
 import client from "../../features/auth/api";
 import {
   BarChart,
-  Bar,
   Legend,
 } from "recharts";
 import { LineChart as LineChartIcon } from "lucide-react";
 import AdminTopics from "./AdminTopics";
-
-
+import { Bar } from "recharts";
 
 
 
 export default function AdminDashboard() {
+
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("Dashboard");
@@ -58,9 +57,17 @@ export default function AdminDashboard() {
     { name: "Topics", icon: <Layers className="w-5 h-5" /> },
     { name: "Users", icon: <Users className="w-5 h-5" /> },
     { name: "Settings", icon: <Settings className="w-5 h-5" /> },
-   
+
 
   ];
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-500">
+        Access denied
+      </div>
+    );
+  }
+
 
 
   const users = [
@@ -70,7 +77,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-gray-900 dark:via-gray-950 dark:to-black transition-colors">
+    <div className="flex min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-gray-900 dark:via-gray-950 dark:to-black transition-colors">
       {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
@@ -95,7 +102,7 @@ export default function AdminDashboard() {
           {activeSection === "Topics" && <AdminTopics />}
           {activeSection === "Users" && <UserManagement users={users} />}
           {activeSection === "Settings" && <SettingsPanel />}
-   
+
         </main>
       </div>
     </div>
@@ -239,9 +246,24 @@ function DashboardOverview() {
     const fetchStats = async () => {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       try {
-        const res = await fetch(`${BASE_URL}/dashboard/stats/`);
-        const data = await res.json();
-        setStats(data);
+        // const res = await fetch(`${BASE_URL}/api/admin/dashboard/stats/`);
+        // const data = await res.json();
+        const res = await client.get("/admin/dashboard/stats/");
+        const data = res.data;
+
+        setStats({
+          totalUsers: data.totals?.users ?? 0,
+          totalCourses: data.totals?.courses ?? 0,
+          totalTopics: data.totals?.topics ?? 0,
+
+          weeklyActivity: data.weeklyActivity ?? [],
+          monthlyTrends: data.monthlyTrends ?? [],
+
+          recentUsers: data.recent?.users ?? [],
+          recentCourses: data.recent?.courses ?? [],
+          recentTopics: data.recent?.topics ?? [],
+        });
+
       } catch (err) {
         console.error(err);
         toast.error("Failed to load analytics.");
@@ -249,13 +271,13 @@ function DashboardOverview() {
         setLoading(false);
       }
     };
-  
+
     fetchStats();
-    const interval = setInterval(fetchStats, 5000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchStats, 5000);
+    // return () => clearInterval(interval);
   }, []);
-  
-  
+
+
 
   return (
     <div>
@@ -343,7 +365,7 @@ function DashboardOverview() {
                 <Line
                   type="monotone"
                   dataKey="topics"
-                  stroke="#10B981"  
+                  stroke="#10B981"
                   strokeWidth={3}
                   dot={{ r: 5 }}
                   name="Topics Added"
@@ -402,7 +424,7 @@ function DashboardOverview() {
                 Recent Users
               </h3>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {stats.recentUsers.map((u) => (
+                {(stats.recentUsers || []).map((u) => (
                   <li key={u.id} className="py-3 flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -429,7 +451,9 @@ function DashboardOverview() {
                 Recent Courses
               </h3>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {stats.recentCourses.map((c) => (
+                {/* {stats.recentCourses.map((c) => ( */}
+                {(stats.recentCourses || []).map((c) => (
+
                   <li key={c.id} className="py-3">
                     <p className="font-medium text-gray-900 dark:text-gray-100">{c.title}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
@@ -488,27 +512,29 @@ function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-  
+
       // --- Log the token from localStorage ---
-      const auth = JSON.parse(localStorage.getItem("auth"));
-      console.log("Stored auth object:", auth);
-  
-      if (!auth?.access) {
-        console.warn("No access token found in localStorage");
-      } else {
-        console.log("Access token exists, length:", auth.access.length);
-      }
-  
-      // --- Log the request about to be made ---
-      console.log("Making request to /api/users/ with headers:", {
-        Authorization: `Bearer ${auth?.access}`,
-      });
-  
-      const res = await client.get("/api/users/");
-  
+      // const auth = JSON.parse(localStorage.getItem("auth"));
+      // console.log("Stored auth object:", auth);
+
+      // if (!auth?.access) {
+      //   console.warn("No access token found in localStorage");
+      // } else {
+      //   console.log("Access token exists, length:", auth.access.length);
+      // }
+
+      // // --- Log the request about to be made ---
+      // console.log("Making request to /api/users/ with headers:", {
+      //   Authorization: `Bearer ${auth?.access}`,
+      // });
+
+      const res = await client.get("/users/");
+
       // --- Log the response ---
-      console.log("Response from /api/users/:", res);
-      setUsers(res.data || []);
+      console.log("Response from /users/:", res);
+      // setUsers(res.data || []);
+      setUsers(Array.isArray(res.data?.results) ? res.data.results : []);
+
     } catch (err) {
       // --- Log the full error object ---
       console.error("Error fetching users:", err);
@@ -519,13 +545,13 @@ function UserManagement() {
       } else {
         console.error("No response received, error:", err.message);
       }
-  
+
       toast.error("Failed to fetch users (401 or server error).");
     } finally {
       setLoading(false);
     }
   };
-  
+
 
   useEffect(() => {
     fetchUsers();
@@ -557,14 +583,26 @@ function UserManagement() {
       setUpdating(null);
     }
   };
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  const filtered = safeUsers.filter((u) => {
+    const name = u?.name || u?.username || "";
+    const email = u?.email || "";
+    const q = search.toLowerCase();
+
+    return (
+      name.toLowerCase().includes(q) ||
+      email.toLowerCase().includes(q)
+    );
+  });
 
   // --- Safe Filtering ---
-  const filtered = users.filter((u) => {
-    const name = u.name || u.username || "";
-    const email = u.email || "";
-    const q = search.toLowerCase();
-    return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
-  });
+  // const filtered = users.filter((u) => {
+  //   const name = u.name || u.username || "";
+  //   const email = u.email || "";
+  //   const q = search.toLowerCase();
+  //   return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
+  // });
 
   return (
     <div className="rounded-2xl bg-white/80 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
@@ -694,61 +732,3 @@ function SettingsPanel() {
     </div>
   );
 }
-
-// import React, { useState } from "react";
-// // eslint-disable-next-line no-unused-vars
-// import { motion } from "framer-motion";
-// import useAuth from "../../hooks/useAuth";
-
-// import Sidebar from "./Sidebar";
-// import TopBar from "./Topbar";
-// import DashboardOverview from "./DashboardOverview";
-// import AdminCourses from "./AdminCourses";
-// import AdminTopics from "./AdminTopics";
-// import UserManagement from "./users/UserManagement";
-// import SettingsPanel from "./SettingsPanel";
-
-// export default function AdminDashboard() {
-//   const { user, logout } = useAuth();
-//   const [sidebarOpen, setSidebarOpen] = useState(false);
-//   const [activeSection, setActiveSection] = useState("Dashboard");
-
-//   const navLinks = [
-//     { name: "Dashboard", icon: "Home" },
-//     { name: "Courses", icon: "BookOpen" },
-//     { name: "Topics", icon: "Layers" },
-//     { name: "Users", icon: "Users" },
-//     { name: "Settings", icon: "Settings" },
-//   ];
-
-//   return (
-//     <div className="flex min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-gray-900 dark:via-gray-950 dark:to-black">
-
-//       <Sidebar
-//         sidebarOpen={sidebarOpen}
-//         setSidebarOpen={setSidebarOpen}
-//         navLinks={navLinks}
-//         activeSection={activeSection}
-//         setActiveSection={setActiveSection}
-//         logout={logout}
-//       />
-
-//       <div className="flex-1 flex flex-col min-h-screen">
-//         <TopBar
-//           sidebarOpen={sidebarOpen}
-//           setSidebarOpen={setSidebarOpen}
-//           user={user}
-//         />
-
-//         <main className="flex-1 px-6 py-8 md:px-10">
-//           {activeSection === "Dashboard" && <DashboardOverview />}
-//           {activeSection === "Courses" && <AdminCourses />}
-//           {activeSection === "Topics" && <AdminTopics />}
-//           {activeSection === "Users" && <UserManagement />}
-//           {activeSection === "Settings" && <SettingsPanel />}
-//         </main>
-
-//       </div>
-//     </div>
-//   );
-// }

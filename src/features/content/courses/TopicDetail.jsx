@@ -1430,10 +1430,10 @@ const CodeBlock = ({ code, language }) => {
       </div>
 
       <div className="relative overflow-x-auto">
-        <pre className="m-0 !p-6 !bg-transparent">
+        <pre className="m-0 p-6! bg-transparent!">
           <code
             ref={codeRef}
-            className="font-mono text-sm leading-relaxed !text-white !bg-transparent"
+            className="font-mono text-sm leading-relaxed text-white! bg-transparent!"
           >
             {code}
           </code>
@@ -1836,7 +1836,7 @@ export default function TopicDetail() {
     const fetchTopic = async () => {
       setLoading(true);
       try {
-        const res = await client.get(`/api/topics/slug/${slug}/`);
+        const res = await client.get(`/topics/by-slug/${slug}/`);
         if (mounted) setTopic(res.data);
       } catch (err) {
         console.error("Topic load failed:", err);
@@ -1856,7 +1856,7 @@ export default function TopicDetail() {
     const fetchRecommended = async () => {
       setRecLoading(true);
       try {
-        const res = await client.get(`/api/topics/${topic.id}/ai-recommended/`);
+        const res = await client.get(`/api/topics/${topic.id}/recommended/`);
         if (mounted) {
           setRecommended(Array.isArray(res.data) ? res.data : (res.data.results || []));
         }
@@ -2062,7 +2062,7 @@ export default function TopicDetail() {
             {/* Footer Navigation */}
             <div className={`mt-16 pt-8 border-t flex justify-between items-center ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
               <button
-                onClick={() => navigate(`/courses/${topic.course_detail?.id || ''}`)}
+                onClick={() => navigate(`/courses/${topic.course_detail?.slug || ''}`)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
                    ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
               >
@@ -2107,7 +2107,8 @@ export default function TopicDetail() {
                     {recommended.map((rec, i) => (
                       <div
                         key={i}
-                        onClick={() => navigate(rec.slug ? `/topics/slug/${rec.slug}` : `/topics/${rec.id}`)}
+                        // onClick={() => navigate(rec.slug ? `/topics/slug/${rec.slug}` : `/topics/${rec.id}`)}
+                        onClick={() => navigate(`/topics/by-slug/${rec.slug}`)}
                         className={`group cursor-pointer p-3 rounded-xl transition-all border
                           ${theme === 'dark'
                             ? 'hover:bg-gray-800 border-transparent hover:border-gray-700'
