@@ -1198,11 +1198,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 import {
-  FiClock, FiCopy, FiCheck, FiBook, FiVideo,
-  FiArrowLeft, FiShare2, FiArrowRight, FiArrowUp
-} from "react-icons/fi";
+  Clock,
+  Copy,
+  Check,
+  BookOpen,
+  Video,
+  ArrowLeft,
+  Share2,
+  ArrowRight,
+  ArrowUp,
+  List,
+  Sparkles,
+  ExternalLink,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import client from "../../auth/api";
 import { useTheme } from "../../../context/ThemeContext";
@@ -1215,6 +1225,9 @@ import "highlight.js/styles/atom-one-dark.css";
 import DOMPurify from "dompurify";
 import parse, { Element, domToReact } from "html-react-parser";
 
+/* ================================
+   Reading Progress Bar
+================================ */
 const ReadingProgress = ({ theme }) => {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -1223,22 +1236,18 @@ const ReadingProgress = ({ theme }) => {
     restDelta: 0.001
   });
 
-  const gradientColor = theme === "dark"
-    ? "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500"
-    : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600";
-
   return (
     <motion.div
-      className={`fixed top-0 left-0 right-0 h-1.5 ${gradientColor} origin-left z-[100]`}
+      className={`fixed top-0 left-0 right-0 h-1 origin-left z-[100]
+        ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`}
       style={{ scaleX }}
     />
   );
 };
 
-/* ==========================================================================
-   UTILITY HELPERS
-   ========================================================================== */
-
+/* ================================
+   Utility Helpers
+================================ */
 function decodeHtml(html) {
   if (!html) return "";
   const txt = document.createElement("textarea");
@@ -1250,17 +1259,10 @@ function extractTextFromDomNode(node, preserveFormatting = false) {
   if (!node) return "";
   if (node.type === "text") return node.data;
   
-  // If this is an element node, we need to serialize it as HTML text
   if (node.type === "tag" || (node instanceof Element)) {
-    // This means we have actual HTML elements that should be shown as code
-    
-    
-    // Use domToReact or similar to get the actual HTML string
     if (node.name) {
-      // Reconstruct the HTML tag as text
       let html = `<${node.name}`;
       
-      // Add attributes
       if (node.attribs && typeof node.attribs === 'object') {
         for (const [key, value] of Object.entries(node.attribs)) {
           if (key !== 'class' || !value.includes('language-')) {
@@ -1270,12 +1272,10 @@ function extractTextFromDomNode(node, preserveFormatting = false) {
       }
       html += '>';
       
-      // Add children
       if (node.children && node.children.length > 0) {
         html += node.children.map(child => extractTextFromDomNode(child, true)).join('');
       }
       
-      // Close tag
       html += `</${node.name}>`;
       return html;
     }
@@ -1287,16 +1287,13 @@ function extractTextFromDomNode(node, preserveFormatting = false) {
   return "";
 }
 
-// Helper to decode HTML entities (including nested encoding)
 function decodeHtmlEntities(text) {
   if (!text) return '';
   const textarea = document.createElement('textarea');
   
-  // Decode multiple times to handle double-encoding
   let decoded = text;
   let previousDecoded = '';
   
-  // Keep decoding until no more changes occur (max 3 iterations)
   for (let i = 0; i < 3 && decoded !== previousDecoded; i++) {
     previousDecoded = decoded;
     textarea.innerHTML = decoded;
@@ -1358,10 +1355,9 @@ function convertInlineStyledParagraphsToHeadings(html) {
   return temp.innerHTML;
 }
 
-/* ==========================================================================
-   CODE BLOCK COMPONENT
-   ========================================================================== */
-
+/* ================================
+   Code Block Component
+================================ */
 const CodeBlock = ({ code, language }) => {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef(null);
@@ -1400,40 +1396,35 @@ const CodeBlock = ({ code, language }) => {
 
   return (
     <motion.div
-      className="my-8 rounded-2xl overflow-hidden bg-[#0d1117] border border-gray-700/50 shadow-2xl group ring-1 ring-white/10"
+      className="my-8 rounded-xl overflow-hidden bg-[#0d1117] border border-slate-800 shadow-lg"
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       viewport={{ once: true }}
     >
-      <div className="flex items-center justify-between px-5 py-3 bg-[#161b22] border-b border-gray-800 select-none">
+      <div className="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-slate-800">
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-            <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+            <div className="w-3 h-3 rounded-full bg-green-500" />
           </div>
-          {/* {language && (
-            <span className="text-xs font-mono text-gray-400 uppercase opacity-70">
-              {language.replace("language-", "")}
-            </span>
-          )} */}
         </div>
 
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-300 hover:text-white transition-all bg-white/5 hover:bg-white/15 rounded-lg border border-gray-700/50 hover:border-gray-500"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white transition-all bg-white/5 hover:bg-white/10 rounded-lg"
         >
-          {copied ? <FiCheck className="text-emerald-400" size={14} /> : <FiCopy size={14} />}
-          {copied ? "COPIED" : "COPY"}
+          {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+          {copied ? "Copied" : "Copy"}
         </button>
       </div>
 
       <div className="relative overflow-x-auto">
-        <pre className="m-0 p-6! bg-transparent!">
+        <pre className="m-0 p-5 bg-transparent">
           <code
             ref={codeRef}
-            className="font-mono text-sm leading-relaxed text-white! bg-transparent!"
+            className="font-mono text-sm leading-relaxed text-white bg-transparent"
           >
             {code}
           </code>
@@ -1443,44 +1434,33 @@ const CodeBlock = ({ code, language }) => {
   );
 };
 
-/* ==========================================================================
-   CONTENT RENDERER COMPONENT - COMPLETE FIX FOR HTML CODE BLOCKS
-   ========================================================================== */
-
+/* ================================
+   Content Renderer Component
+================================ */
 const ContentRenderer = ({ htmlContent, theme = "light" }) => {
   const processedHtml = useMemo(() => {
     if (!htmlContent) return "";
 
     let decoded = decodeHtml(htmlContent);
-    
-    // Convert inline-styled paragraphs to proper headings
     decoded = convertInlineStyledParagraphsToHeadings(decoded);
     
-    // CRITICAL: Process code blocks to extract and preserve raw HTML
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = decoded;
     
-    // Find all pre elements
     const preElements = tempDiv.querySelectorAll('pre');
     preElements.forEach(pre => {
       const codeElement = pre.querySelector('code');
       if (codeElement) {
-        // Get the raw HTML string from the code element
         let codeContent = codeElement.innerHTML;
         
-        // Decode any HTML entities (this handles &lt; &gt; etc)
         const tempDecoder = document.createElement('textarea');
         tempDecoder.innerHTML = codeContent;
         let decodedContent = tempDecoder.value;
         
-        // Check if we have actual HTML tags after decoding
         if (decodedContent.includes('<') && decodedContent.includes('>')) {
-          // This is HTML code that should be displayed as text
-          // Encode it properly for storage
           const base64 = btoa(unescape(encodeURIComponent(decodedContent)));
           pre.setAttribute('data-code-base64', base64);
           
-          // Also store as escaped for fallback
           const escaped = decodedContent
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -1488,10 +1468,8 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
             .replace(/"/g, '&quot;');
           pre.setAttribute('data-code-content', escaped);
           
-          // Update the code element content with the escaped version
           codeElement.innerHTML = escaped;
         } else {
-          // Regular code (non-HTML)
           const textContent = codeElement.textContent || codeElement.innerText || '';
           const base64 = btoa(unescape(encodeURIComponent(textContent)));
           pre.setAttribute('data-code-base64', base64);
@@ -1501,16 +1479,10 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
     });
     
     decoded = tempDiv.innerHTML;
-    
-    // Merge broken code blocks
     decoded = decoded.replace(/<\/code>\s*<\/pre>\s*<pre[^>]*>\s*<code[^>]*>/gi, "\n");
     decoded = decoded.replace(/<\/pre>\s*<pre[^>]*>/gi, "\n");
-    
-    // Remove empty paragraphs
     decoded = decoded.replace(/<p><\/p>/g, "");
     decoded = decoded.replace(/<p>\s*<\/p>/g, "");
-    
-    // Clean up BlockNote artifacts
     decoded = decoded.replace(/data-id="[^"]*"/g, "");
     decoded = decoded.replace(/data-content-type="[^"]*"/g, "");
     
@@ -1532,7 +1504,6 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
 
   const options = {
     replace: (domNode) => {
-      // Handle Code Blocks (multiline code inside <pre><code>)
       if (domNode instanceof Element && domNode.name === "pre") {
         const codeNode = domNode.children?.find((c) => c.name === "code");
 
@@ -1544,7 +1515,6 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
 
           let rawCode = null;
           
-          // Try base64 first (most reliable)
           if (domNode.attribs?.["data-code-base64"]) {
             try {
               rawCode = decodeURIComponent(escape(atob(domNode.attribs["data-code-base64"])));
@@ -1553,27 +1523,22 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
             }
           }
           
-          // Fall back to escaped HTML entities
           if (!rawCode && domNode.attribs?.["data-code-content"]) {
             rawCode = decodeHtmlEntities(domNode.attribs["data-code-content"]);
           }
           
-          // Check if code node has actual HTML element children (not just text)
           if (!rawCode && codeNode.children) {
             const hasElementChildren = codeNode.children.some(child => 
               child.type === 'tag' || (child.name && child.name !== 'text')
             );
             
             if (hasElementChildren) {
-              // This code block contains actual HTML elements - serialize them as text
               rawCode = extractTextFromDomNode(codeNode, true);
             } else {
-              // Regular text extraction
               rawCode = extractTextFromDomNode(codeNode);
             }
           }
           
-          // Last resort: get text content
           if (!rawCode) {
             rawCode = extractTextFromDomNode(codeNode);
           }
@@ -1584,63 +1549,60 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
 
           return (
             <div className="not-prose max-w-full">
-              <CodeBlock code={rawCode} language={language} />
+              <CodeBlock code={rawCode} language={language} theme={theme} />
             </div>
           );
         }
       }
 
-      // Handle Inline Code (code NOT inside pre)
       if (domNode instanceof Element && domNode.name === "code" && domNode.parent?.name !== "pre") {
         const codeText = extractTextFromDomNode(domNode);
         
         return (
           <code className={`
-            px-1.5 py-0.5 rounded text-sm font-mono whitespace-pre-wrap
+            px-2 py-0.5 rounded-md text-sm font-mono
             ${theme === 'dark' 
-              ? 'bg-gray-800 text-pink-400 border border-gray-700' 
-              : 'bg-gray-100 text-pink-600 border border-gray-200'}
+              ? 'bg-slate-800 text-pink-400' 
+              : 'bg-slate-100 text-pink-600'}
           `}>
             {codeText}
           </code>
         );
       }
 
-      // Handle Images
       if (domNode instanceof Element && domNode.name === "img") {
         return (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
             viewport={{ once: true }}
-            className="my-10"
+            className="my-8"
           >
             <img
               src={domNode.attribs.src}
               alt={domNode.attribs.alt || "Content Image"}
-              className="rounded-2xl shadow-xl w-full border border-gray-200 dark:border-gray-800"
+              className="rounded-xl shadow-lg w-full border border-slate-200 dark:border-slate-800"
               loading="lazy"
             />
           </motion.div>
         );
       }
 
-      // Handle Headings
       if (domNode instanceof Element && /^h[1-6]$/.test(domNode.name)) {
         const HeadingTag = domNode.name;
         return (
           <HeadingTag
             id={domNode.attribs?.id}
             className={`
-              ${HeadingTag === 'h1' ? 'text-4xl font-black mb-6 mt-12' : ''}
-              ${HeadingTag === 'h2' ? 'text-3xl font-bold mb-5 mt-10' : ''}
-              ${HeadingTag === 'h3' ? 'text-2xl font-semibold mb-4 mt-8' : ''}
-              ${HeadingTag === 'h4' ? 'text-xl font-semibold mb-3 mt-6' : ''}
-              ${HeadingTag === 'h5' ? 'text-lg font-semibold mb-2 mt-4' : ''}
-              ${HeadingTag === 'h6' ? 'text-base font-semibold mb-2 mt-4' : ''}
+              ${HeadingTag === 'h1' ? 'text-3xl font-bold mb-6 mt-12' : ''}
+              ${HeadingTag === 'h2' ? 'text-2xl font-bold mb-5 mt-10' : ''}
+              ${HeadingTag === 'h3' ? 'text-xl font-semibold mb-4 mt-8' : ''}
+              ${HeadingTag === 'h4' ? 'text-lg font-semibold mb-3 mt-6' : ''}
+              ${HeadingTag === 'h5' ? 'text-base font-semibold mb-2 mt-4' : ''}
+              ${HeadingTag === 'h6' ? 'text-sm font-semibold mb-2 mt-4' : ''}
               scroll-mt-32
-              ${theme === 'dark' ? 'text-white' : 'text-gray-900'}
+              ${theme === 'dark' ? 'text-white' : 'text-slate-900'}
             `}
           >
             {domToReact(domNode.children, options)}
@@ -1648,37 +1610,22 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
         );
       }
 
-      // Handle Unordered Lists
       if (domNode instanceof Element && domNode.name === "ul") {
         return (
-          <ul
-            className={`
-              my-6 space-y-2 list-disc pl-6
-              ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
-              marker:text-blue-500
-            `}
-          >
+          <ul className={`my-6 space-y-2 list-disc pl-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} marker:text-blue-500`}>
             {domToReact(domNode.children, options)}
           </ul>
         );
       }
 
-      // Handle Ordered Lists
       if (domNode instanceof Element && domNode.name === "ol") {
         return (
-          <ol
-            className={`
-              my-6 space-y-2 list-decimal pl-6
-              ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
-              marker:text-blue-500
-            `}
-          >
+          <ol className={`my-6 space-y-2 list-decimal pl-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} marker:text-blue-500`}>
             {domToReact(domNode.children, options)}
           </ol>
         );
       }
 
-      // Handle List Items
       if (domNode instanceof Element && domNode.name === "li") {
         return (
           <li className="leading-relaxed pl-2">
@@ -1687,34 +1634,22 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
         );
       }
 
-      // Handle Paragraphs
       if (domNode instanceof Element && domNode.name === "p") {
         return (
-          <p className={`
-            leading-[1.8] mb-6 text-lg
-            ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}
-          `}>
+          <p className={`leading-relaxed mb-6 text-base ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
             {domToReact(domNode.children, options)}
           </p>
         );
       }
 
-      // Handle Blockquotes
       if (domNode instanceof Element && domNode.name === "blockquote") {
         return (
-          <blockquote className={`
-            my-6 border-l-4 border-blue-500 pl-6 py-2 rounded-r-lg
-            ${theme === 'dark' 
-              ? 'bg-blue-500/10 text-gray-300' 
-              : 'bg-blue-50 text-gray-700'}
-            italic
-          `}>
+          <blockquote className={`my-6 border-l-4 border-blue-500 pl-6 py-2 rounded-r-lg ${theme === 'dark' ? 'bg-blue-500/10 text-slate-300' : 'bg-blue-50 text-slate-700'} italic`}>
             {domToReact(domNode.children, options)}
           </blockquote>
         );
       }
 
-      // Handle Links
       if (domNode instanceof Element && domNode.name === "a") {
         return (
           <a
@@ -1728,29 +1663,16 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
         );
       }
 
-      // Handle Bold
       if (domNode instanceof Element && (domNode.name === "strong" || domNode.name === "b")) {
-        return (
-          <strong className="font-bold">
-            {domToReact(domNode.children, options)}
-          </strong>
-        );
+        return <strong className="font-bold">{domToReact(domNode.children, options)}</strong>;
       }
 
-      // Handle Italic
       if (domNode instanceof Element && (domNode.name === "em" || domNode.name === "i")) {
-        return (
-          <em className="italic">
-            {domToReact(domNode.children, options)}
-          </em>
-        );
+        return <em className="italic">{domToReact(domNode.children, options)}</em>;
       }
 
-      // Handle horizontal rules
       if (domNode instanceof Element && domNode.name === "hr") {
-        return (
-          <hr className={`my-8 border-t ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`} />
-        );
+        return <hr className={`my-8 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`} />;
       }
     },
   };
@@ -1762,62 +1684,131 @@ const ContentRenderer = ({ htmlContent, theme = "light" }) => {
   );
 };
 
-const TableOfContents = React.memo(({ toc, activeId, theme }) => {
+/* ================================
+   Table of Contents Component
+================================ */
+const TableOfContents = ({ toc, activeId, theme }) => {
   if (!toc || toc.length === 0) return null;
+
+  const textPrimary = theme === "dark" ? "text-white" : "text-slate-900";
+  const textSecondary = theme === "dark" ? "text-slate-400" : "text-slate-600";
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`p-6 rounded-2xl border backdrop-blur-md transition-colors
+      className={`rounded-xl border p-6
         ${theme === "dark"
-          ? "bg-gray-900/80 border-gray-700/50"
-          : "bg-white/80 border-indigo-100/50 shadow-lg shadow-indigo-100/50"}`
-      }
+          ? "bg-slate-900/50 border-slate-800"
+          : "bg-white border-slate-200"}`}
     >
-      <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-        <FiBook className="text-blue-500" />
-        Contents
+      <h4 className={`text-sm font-bold mb-4 flex items-center gap-2 ${textPrimary}`}>
+        <List size={18} />
+        Table of Contents
       </h4>
-      <nav className="space-y-1 relative">
-        <div className={`absolute left-[5px] top-2 bottom-2 w-px ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`} />
-
+      <nav className="space-y-1">
         {toc.map((item) => (
           <a
             key={item.id}
             href={`#${item.id}`}
             onClick={(e) => {
               e.preventDefault();
-              document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+              document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
             className={`
-               block pl-4 py-2 text-sm transition-all relative
-               ${item.level === 3 ? "ml-4" : ""}
-               ${activeId === item.id
-                ? "text-blue-500 font-semibold"
-                : theme === 'dark' ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-900"
+              block py-2 px-3 text-sm rounded-lg transition-all
+              ${item.level === 3 ? "ml-4" : ""}
+              ${item.level === 4 ? "ml-8" : ""}
+              ${activeId === item.id
+                ? `${theme === 'dark' ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'} font-medium`
+                : `${textSecondary} hover:${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-50'}`
               }
             `}
           >
-            {activeId === item.id && (
-              <motion.div
-                layoutId="toc-active"
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-full bg-blue-500 rounded-full"
-              />
-            )}
             {item.text}
           </a>
         ))}
       </nav>
     </motion.div>
   );
-});
-TableOfContents.displayName = "TableOfContents";
+};
 
-/* ==========================================================================
-   MAIN PAGE COMPONENT
-   ========================================================================== */
+/* ================================
+   Recommendations Component
+================================ */
+const RecommendationsPanel = ({ recommendations, loading, theme, navigate }) => {
+  const textPrimary = theme === "dark" ? "text-white" : "text-slate-900";
+  const textSecondary = theme === "dark" ? "text-slate-400" : "text-slate-600";
+
+  return (
+    <div
+      className={`rounded-xl border p-6
+        ${theme === 'dark'
+          ? 'bg-slate-900/50 border-slate-800'
+          : 'bg-white border-slate-200'}`}
+    >
+      <h4 className={`text-sm font-bold mb-4 flex items-center gap-2 ${textPrimary}`}>
+        <Sparkles size={18} />
+        Recommended Topics
+      </h4>
+
+      {loading ? (
+        <div className="py-8 text-center">
+          <div className={`w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-2
+            ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'}`}
+          />
+          <p className={`text-xs ${textSecondary}`}>Loading...</p>
+        </div>
+      ) : recommendations.length === 0 ? (
+        <p className={`text-sm ${textSecondary} italic`}>No recommendations yet</p>
+      ) : (
+        <div className="space-y-3">
+          {recommendations.map((rec, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              onClick={() => navigate(`/topics/by-slug/${rec.slug}`)}
+              className={`group cursor-pointer p-3 rounded-lg border transition-all
+                ${theme === 'dark'
+                  ? 'border-slate-800 hover:bg-slate-800/50 hover:border-slate-700'
+                  : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'}`}
+            >
+              <h5 className={`text-sm font-semibold mb-1 group-hover:text-blue-500 transition-colors line-clamp-1 ${textPrimary}`}>
+                {rec.title}
+              </h5>
+              <p className={`text-xs line-clamp-2 ${textSecondary}`}>
+                {rec.description || "Learn more about this topic"}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ================================
+   Loading State
+================================ */
+const LoadingState = ({ theme }) => {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className={`w-16 h-16 rounded-2xl border-4 border-t-transparent animate-spin mb-6
+        ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}
+      />
+      <p className={`text-base ${theme === "dark" ? "text-slate-400" : "text-slate-600"}`}>
+        Loading topic...
+      </p>
+    </div>
+  );
+};
+
+/* ================================
+   Main Topic Detail Component
+================================ */
 export default function TopicDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -1830,7 +1821,7 @@ export default function TopicDetail() {
   const [recLoading, setRecLoading] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  // 1. Fetch Topic
+  // Fetch Topic
   useEffect(() => {
     let mounted = true;
     const fetchTopic = async () => {
@@ -1849,7 +1840,7 @@ export default function TopicDetail() {
     return () => { mounted = false; };
   }, [slug]);
 
-  // 2. Fetch Recommended
+  // Fetch Recommendations
   useEffect(() => {
     if (!topic?.id) return;
     let mounted = true;
@@ -1870,7 +1861,7 @@ export default function TopicDetail() {
     return () => { mounted = false; };
   }, [topic?.id]);
 
-  // 3. Scroll Spy for TOC
+  // Scroll Spy for TOC
   useEffect(() => {
     if (!topic) return;
     const observer = new IntersectionObserver(
@@ -1886,7 +1877,7 @@ export default function TopicDetail() {
     return () => observer.disconnect();
   }, [topic]);
 
-  // 4. Parse TOC from HTML
+  // Parse TOC from HTML
   const toc = useMemo(() => {
     if (!topic?.content_html) return [];
     const temp = document.createElement("div");
@@ -1899,13 +1890,12 @@ export default function TopicDetail() {
     }));
   }, [topic]);
 
-  // 5. Video Embed Helper - Supports YouTube and Vimeo
+  // Video Embed Helper
   const videoEmbedUrl = useMemo(() => {
     if (!topic?.video_url) return null;
     
     const url = topic.video_url.trim();
     
-    // YouTube patterns
     const youtubeMatch = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{10,12})/);
     if (youtubeMatch) {
       return {
@@ -1914,7 +1904,6 @@ export default function TopicDetail() {
       };
     }
     
-    // Vimeo patterns
     const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
     if (vimeoMatch) {
       return {
@@ -1926,147 +1915,167 @@ export default function TopicDetail() {
     return null;
   }, [topic?.video_url]);
 
-  // 6. Back to Top Logic
+  // Back to Top Logic
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // LOADING STATE
+  const textPrimary = theme === "dark" ? "text-white" : "text-slate-900";
+  const textSecondary = theme === "dark" ? "text-slate-400" : "text-slate-600";
+
   if (loading) {
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-gray-500 animate-pulse font-medium">Loading knowledge...</p>
-      </div>
-    );
+    return <LoadingState theme={theme} />;
   }
 
-  // NOT FOUND STATE
   if (!topic) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Topic not found</h2>
-        <button onClick={() => navigate("/courses")} className="text-blue-500 hover:underline">← Return to courses</button>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6">
+        <h2 className={`text-2xl font-bold mb-4 ${textPrimary}`}>Topic not found</h2>
+        <button 
+          onClick={() => navigate("/courses")} 
+          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all
+            ${theme === "dark"
+              ? "bg-white text-slate-900 hover:bg-slate-100"
+              : "bg-slate-900 text-white hover:bg-slate-800"
+            }
+            shadow-lg hover:shadow-xl hover:scale-105`}
+        >
+          Return to Courses
+        </button>
       </div>
     );
   }
 
-  // --- RENDER ---
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0B0F15]' : 'bg-gray-50'}`}>
+    <div className="min-h-screen">
       <ReadingProgress theme={theme} />
 
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 xl:gap-14">
-
-          {/* LEFT COLUMN: Content */}
-          <main className="lg:col-span-8 w-full">
-
+      <div className="container mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Content */}
+          <main className="lg:col-span-8">
             {/* Header */}
             <motion.header
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
               className="mb-12"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border 
+              {/* Breadcrumb */}
+              {/* <button
+                onClick={() => navigate(`/courses/${topic.course_detail?.slug || ''}`)}
+                className={`inline-flex items-center gap-2 text-sm font-medium mb-6
+                  ${theme === "dark" ? "text-slate-400 hover:text-slate-300" : "text-slate-600 hover:text-slate-700"}
+                  transition-colors group`}
+              >
+                <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+                Back to {topic.course_detail?.title || "Course"}
+              </button> */}
+
+              {/* Meta Info
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border
                   ${theme === 'dark'
-                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                    : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                    ? 'bg-blue-900/30 border-blue-800 text-blue-300'
+                    : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
                   {topic.course_detail?.title || "Topic"}
                 </span>
-                <span className={`text-sm flex items-center gap-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                  <FiClock size={14} /> {new Date(topic.created_at).toLocaleDateString()}
+                <span className={`flex items-center gap-1.5 text-sm ${textSecondary}`}>
+                  <Clock size={14} />
+                  {new Date(topic.created_at).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  })}
                 </span>
-              </div>
+              </div> */}
 
-              <h1 className={`text-3xl md:text-5xl font-black tracking-tight leading-tight mb-6 
-                 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {/* Title */}
+              <h1 className={`text-3xl md:text-4xl lg:text-5xl font-bold mb-2 mt-8 leading-tight ${textPrimary}`}>
                 {topic.title}
               </h1>
 
+              {/* Description */}
               {topic.description && (
-                <p className={`text-xl font-light leading-relaxed 
-                   ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-lg leading-relaxed ${textSecondary}`}>
                   {topic.description}
                 </p>
               )}
             </motion.header>
 
-           
+            {/* Video Section */}
+            {topic.video_url && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="mb-12"
+              >
+                <div className={`rounded-xl overflow-hidden border
+                  ${theme === 'dark' 
+                    ? 'bg-slate-900/50 border-slate-800' 
+                    : 'bg-white border-slate-200'}`}
+                >
+                  <div className={`px-6 py-4 border-b flex items-center gap-2
+                    ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`}
+                  >
+                    <Video size={18} className="text-blue-500" />
+                    <h3 className={`font-bold text-base ${textPrimary}`}>
+                      Video Tutorial
+                    </h3>
+                  </div>
+                  
+                  {videoEmbedUrl ? (
+                    <div className="relative aspect-video bg-black">
+                      <iframe
+                        src={videoEmbedUrl.url}
+                        className="w-full h-full"
+                        title="Topic Video Tutorial"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        allowFullScreen
+                        frameBorder="0"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video flex flex-col items-center justify-center p-12">
+                      <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-4
+                        ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                        <Video size={28} className={textSecondary} />
+                      </div>
+                      <p className={`text-sm font-medium ${textSecondary}`}>
+                        No video available
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
-            {/* Main Article Content */}
+            {/* Main Content */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="min-h-[200px]"
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="prose prose-lg max-w-none"
             >
               <ContentRenderer htmlContent={topic.content_html} theme={theme} />
             </motion.div>
-             {/* Video Section */}
-             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="mb-14"
-            >
-              <div className={`rounded-2xl overflow-hidden border transition-colors
-                ${theme === 'dark' 
-                  ? 'bg-gray-900/50 border-gray-800' 
-                  : 'bg-white border-gray-200'}`}
-              >
-                <div className={`px-6 py-4 border-b flex items-center gap-2
-                  ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}
-                >
-                  <FiVideo className="text-blue-500" size={18} />
-                  <h3 className={`font-bold text-lg
-                    ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Video Tutorial
-                  </h3>
-                </div>
-                
-                {videoEmbedUrl ? (
-                  <div className="relative aspect-video bg-black">
-                    <iframe
-                      src={videoEmbedUrl.url}
-                      className="w-full h-full"
-                      title="Topic Video Tutorial"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                      allowFullScreen
-                      frameBorder="0"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-video flex flex-col items-center justify-center p-12">
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4
-                      ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                      <FiVideo className={`text-3xl ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`} size={32} />
-                    </div>
-                    <p className={`text-center font-medium
-                      ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No video for this topic
-                    </p>
-                    <p className={`text-sm text-center mt-2
-                      ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
-                      Check back later for video content
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
 
             {/* Footer Navigation */}
-            <div className={`mt-16 pt-8 border-t flex justify-between items-center ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
+            <div className={`mt-16 pt-8 border-t flex justify-between items-center
+              ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`}>
               <button
                 onClick={() => navigate(`/courses/${topic.course_detail?.slug || ''}`)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
-                   ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                  ${theme === 'dark' 
+                    ? 'hover:bg-slate-800 text-slate-300 hover:text-white' 
+                    : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900'}`}
               >
-                <FiArrowLeft /> Back to Course
+                <ArrowLeft size={16} />
+                Back to Course
               </button>
 
               <button
@@ -2074,74 +2083,46 @@ export default function TopicDetail() {
                   navigator.clipboard.writeText(window.location.href);
                   toast.success("Link copied!");
                 }}
-                className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                className={`p-2 rounded-lg transition-colors
+                  ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'}`}
               >
-                <FiShare2 />
+                <Share2 size={18} />
               </button>
             </div>
           </main>
 
-          {/* RIGHT COLUMN: Sidebar (Sticky) */}
-          <aside className="hidden lg:block lg:col-span-4 relative">
-            <div className="sticky top-28 space-y-8">
-
+          {/* Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="lg:sticky lg:top-24 space-y-6">
               <TableOfContents toc={toc} activeId={activeId} theme={theme} />
-
-              {/* Recommendations */}
-              <div className={`p-6 rounded-2xl border transition-colors
-                 ${theme === 'dark'
-                  ? 'bg-gray-900/40 border-gray-800'
-                  : 'bg-white border-gray-200 shadow-sm'}`}
-              >
-                <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2
-                   ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  <FiArrowRight className="text-purple-500" /> Recommended
-                </h4>
-
-                {recLoading ? (
-                  <div className="py-4 text-center text-sm text-gray-500">Loading...</div>
-                ) : recommended.length === 0 ? (
-                  <div className="py-2 text-sm text-gray-500 italic">No recommendations yet.</div>
-                ) : (
-                  <div className="space-y-4">
-                    {recommended.map((rec, i) => (
-                      <div
-                        key={i}
-                        // onClick={() => navigate(rec.slug ? `/topics/slug/${rec.slug}` : `/topics/${rec.id}`)}
-                        onClick={() => navigate(`/topics/by-slug/${rec.slug}`)}
-                        className={`group cursor-pointer p-3 rounded-xl transition-all border
-                          ${theme === 'dark'
-                            ? 'hover:bg-gray-800 border-transparent hover:border-gray-700'
-                            : 'hover:bg-indigo-50 border-transparent hover:border-indigo-100'}`}
-                      >
-                        <h5 className={`text-sm font-semibold mb-1 group-hover:text-blue-500 transition-colors
-                           ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {rec.title}
-                        </h5>
-                        <p className="text-xs text-gray-500 line-clamp-2">{rec.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+              <RecommendationsPanel 
+                recommendations={recommended} 
+                loading={recLoading} 
+                theme={theme} 
+                navigate={navigate}
+              />
             </div>
           </aside>
-
         </div>
       </div>
 
-      {/* Back to Top */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: showBackToTop ? 1 : 0, scale: showBackToTop ? 1 : 0.8 }}
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`fixed right-8 bottom-8 z-50 p-4 rounded-full shadow-2xl transition-transform hover:scale-110 focus:outline-none
-           ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-indigo-600 text-white'}`}
-      >
-        <FiArrowUp size={20} />
-      </motion.button>
-
+      {/* Back to Top Button */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className={`fixed right-6 bottom-6 z-50 p-3.5 rounded-xl shadow-lg transition-all hover:scale-110
+              ${theme === 'dark' 
+                ? 'bg-slate-900 text-white border border-slate-800' 
+                : 'bg-white text-slate-900 border border-slate-200'}`}
+          >
+            <ArrowUp size={18} strokeWidth={2.5} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

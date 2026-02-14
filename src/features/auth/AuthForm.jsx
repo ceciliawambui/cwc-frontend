@@ -17,8 +17,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
     confirm_password: "",
   });
 
-  const onChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -38,7 +37,11 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
         toast.success("Welcome back!");
 
-        if (loggedUser?.role === "admin" || loggedUser?.is_admin || loggedUser?.is_staff) {
+        if (
+          loggedUser?.role === "admin" ||
+          loggedUser?.is_admin ||
+          loggedUser?.is_staff
+        ) {
           nav("/admin");
         } else {
           nav("/dashboard");
@@ -72,21 +75,21 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         const response = await registerRequest(payload);
 
         console.log("Registration successful:", response.data);
-        
+
         toast.success("Account created successfully! Please log in.");
-        
+
         // Redirect to login page
         nav("/login");
-        
+
         onSuccess?.();
       }
     } catch (err) {
       console.error("Auth Error:", err);
-      
+
       // Handle specific error messages from backend
       if (err?.response?.data) {
         const errorData = err.response.data;
-        
+
         // Handle field-specific errors
         if (errorData.username) {
           toast.error(`Username: ${errorData.username[0]}`);
@@ -126,7 +129,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
           onChange={onChange}
           required
           className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
-                     bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm focus:ring-2 focus:ring-indigo-400
+                     bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
                      text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition"
         />
       )}
@@ -139,7 +142,8 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         onChange={onChange}
         required
         className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
-                   bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
+                   bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+
                    text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
       />
 
@@ -151,7 +155,7 @@ export default function AuthForm({ mode = "login", onSuccess }) {
         onChange={onChange}
         required
         className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
-                   bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
+                   bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
                    text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
       />
 
@@ -164,19 +168,29 @@ export default function AuthForm({ mode = "login", onSuccess }) {
           onChange={onChange}
           required
           className="w-full py-3 px-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 
-                     bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-indigo-400
+                     bg-white/70 dark:bg-gray-900/60 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
                      text-gray-900 dark:text-gray-100 placeholder-gray-500 transition"
         />
       )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-3 mt-2 rounded-xl font-semibold text-white text-lg 
-                   bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:opacity-90 transition-all
-                   disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? <Loader size={20} /> : mode === "login" ? "Sign In" : "Create Account"}
+<button
+  type="submit"
+  disabled={loading}
+  className="w-full py-3 mt-2 rounded-xl font-semibold text-white text-lg 
+             bg-gradient-to-r from-emerald-500 to-teal-500
+             hover:from-emerald-600 hover:to-teal-600
+             shadow-lg shadow-emerald-500/20
+             transition-all duration-300 hover:scale-[1.02]
+             disabled:opacity-50 disabled:cursor-not-allowed"
+>
+
+        {loading ? (
+          <Loader size={20} />
+        ) : mode === "login" ? (
+          "Sign In"
+        ) : (
+          "Create Account"
+        )}
       </button>
     </motion.form>
   );

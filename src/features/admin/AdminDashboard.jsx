@@ -16,6 +16,7 @@ import {
   Search,
   Edit3,
   Trash2,
+  Folder
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -40,6 +41,8 @@ import {
 import { LineChart as LineChartIcon } from "lucide-react";
 import AdminTopics from "./AdminTopics";
 import { Bar } from "recharts";
+import AdminCategories from "./AdminCategories";
+import AdminBlogs from "./AdminBlogs";
 
 
 
@@ -51,10 +54,10 @@ export default function AdminDashboard() {
 
   const navLinks = [
     { name: "Dashboard", icon: <Home className="w-5 h-5" /> },
-    // { name: "Languages", icon: <BookOpen className="w-5 h-5" /> },
-    // { name: "AI Tools", icon: <Bot className="w-5 h-5" /> },
+    { name: "Categories", icon: <Bot className="w-5 h-5" /> },
     { name: "Courses", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Topics", icon: <Layers className="w-5 h-5" /> },
+    { name: "Blogs", icon: <Folder className="w-5 h-5" /> },
     { name: "Users", icon: <Users className="w-5 h-5" /> },
     { name: "Settings", icon: <Settings className="w-5 h-5" /> },
 
@@ -98,8 +101,10 @@ export default function AdminDashboard() {
 
         <main className="flex-1 px-6 py-8 md:px-10">
           {activeSection === "Dashboard" && <DashboardOverview />}
+          {activeSection === "Categories" && <AdminCategories />}
           {activeSection === "Courses" && <AdminCourses />}
           {activeSection === "Topics" && <AdminTopics />}
+          {activeSection === "Blogs" && <AdminBlogs/>}
           {activeSection === "Users" && <UserManagement users={users} />}
           {activeSection === "Settings" && <SettingsPanel />}
 
@@ -233,9 +238,11 @@ function DashboardOverview() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalAdmins: 0,
+    totalCategories: 0,
     totalCourses: 0,
     totalTopics: 0,
     recentUsers: [],
+    recentCategories: [],
     recentCourses: [],
     recentTopics: [],
     weeklyActivity: [],
@@ -255,11 +262,14 @@ function DashboardOverview() {
           totalUsers: data.totals?.users ?? 0,
           totalCourses: data.totals?.courses ?? 0,
           totalTopics: data.totals?.topics ?? 0,
+          totalCategories: data.totals?.categories ?? 0,
+
 
           weeklyActivity: data.weeklyActivity ?? [],
           monthlyTrends: data.monthlyTrends ?? [],
 
           recentUsers: data.recent?.users ?? [],
+          recentCategories: data.recent?.categories ?? [],
           recentCourses: data.recent?.courses ?? [],
           recentTopics: data.recent?.topics ?? [],
         });
@@ -302,7 +312,7 @@ function DashboardOverview() {
       ) : (
         <>
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -313,6 +323,13 @@ function DashboardOverview() {
               value={stats.totalUsers}
               description="Registered on the platform"
             />
+             <DashboardCard
+              icon={<Folder className="w-7 h-7" />}
+              title="Categories"
+              value={stats.totalCategories}
+              description="Learning categories available"
+            />
+
             <DashboardCard
               icon={<BookOpen className="w-7 h-7" />}
               title="Courses"
@@ -361,6 +378,7 @@ function DashboardOverview() {
 
                 <Legend />
                 <Line type="monotone" dataKey="users" stroke="#6366F1" strokeWidth={3} dot={{ r: 5 }} name="Users Joined" />
+                <Line type="monotone" dataKey="categories" stroke="#ef4042" strokeWidth={3} dot={{ r: 5 }} name="Categories Added" />
                 <Line type="monotone" dataKey="courses" stroke="#EC4899" strokeWidth={3} dot={{ r: 5 }} name="Courses Added" />
                 <Line
                   type="monotone"
@@ -409,15 +427,17 @@ function DashboardOverview() {
 
                 <Legend />
                 <Bar dataKey="users" fill="#6366F1" name="Users" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="categories" fill="#ef4042" name="Categories" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="courses" fill="#EC4899" name="Courses" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="topics" fill="#10B981" name="Topics" radius={[6, 6, 0, 0]} />
+                 
               </BarChart>
             </ResponsiveContainer>
 
           </div>
 
           {/* === Recent Activity === */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Users */}
             <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -444,6 +464,23 @@ function DashboardOverview() {
                 ))}
               </ul>
             </div>
+             {/* Categories */}
+             <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Recent Categories
+              </h3>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {(stats.recentCategories || []).map((cat) => (
+
+                  <li key={cat.id} className="py-3">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{cat.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {cat.description || "No description available"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             {/* Courses */}
             <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
@@ -451,7 +488,6 @@ function DashboardOverview() {
                 Recent Courses
               </h3>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {/* {stats.recentCourses.map((c) => ( */}
                 {(stats.recentCourses || []).map((c) => (
 
                   <li key={c.id} className="py-3">
@@ -496,37 +532,9 @@ function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
-  // --- Fetch Users ---
-  // const fetchUsers = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await client.get("/api/users/");
-  //     setUsers(res.data || []);
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error("Failed to fetch users (401 or server error).");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const fetchUsers = async () => {
     try {
       setLoading(true);
-
-      // --- Log the token from localStorage ---
-      // const auth = JSON.parse(localStorage.getItem("auth"));
-      // console.log("Stored auth object:", auth);
-
-      // if (!auth?.access) {
-      //   console.warn("No access token found in localStorage");
-      // } else {
-      //   console.log("Access token exists, length:", auth.access.length);
-      // }
-
-      // // --- Log the request about to be made ---
-      // console.log("Making request to /api/users/ with headers:", {
-      //   Authorization: `Bearer ${auth?.access}`,
-      // });
 
       const res = await client.get("/users/");
 
@@ -732,3 +740,4 @@ function SettingsPanel() {
     </div>
   );
 }
+

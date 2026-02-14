@@ -2,419 +2,672 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  Bookmark,
+  ArrowUp,
+  ArrowUpRight,
+  BookOpen,
+  Layers,
+  Zap,
+  TrendingUp,
+  Clock,
+  Star,
+  ChevronRight,
+  Filter,
+  X,
+} from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import heroImg from "../../assets/student.jpg";
-import {
-  GraduationCap,
-  Layers,
-  Users,
-  RefreshCcw,
-} from "lucide-react";
 import Chatbot from "../../components/Chatbot";
+import SafeIcon from "../../components/SafeIcon";
+import { resolveCourseIcon } from "../../utils/courseIcons";
 
-// Use consistent API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
-// Static data to reduce re-renders
-const FEATURES = [
-  {
-    title: "Structured Learning",
-    desc: "Follow guided learning paths that reflect real-world tech stacks — from Frontend to DevOps.",
-    icon: GraduationCap,
-    color: "from-indigo-500 to-purple-500",
-  },
-  {
-    title: "Expert-Curated",
-    desc: "Each topic and course is reviewed by mentors and tech professionals working in the field.",
-    icon: Layers,
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    title: "Community Driven",
-    desc: "Engage with other learners, collaborate on projects, and grow together in an inspiring environment.",
-    icon: Users,
-    color: "from-pink-500 to-rose-500",
-  },
-  {
-    title: "Always Updated",
-    desc: "Stay current with new frameworks, tools, and best practices through continuously refreshed content.",
-    icon: RefreshCcw,
-    color: "from-green-500 to-emerald-500",
-  },
-];
-
-// Logo mapping function (pure function)
-const getLogoUrl = (title) => {
-  const key = title.toLowerCase();
-  if (key.includes("python")) return "https://cdn.simpleicons.org/python";
-  if (key.includes("javascript")) return "https://cdn.simpleicons.org/javascript";
-  if (key.includes("react")) return "https://cdn.simpleicons.org/react";
-  if (key.includes("django")) return "https://cdn.simpleicons.org/django";
-  if (key.includes("node")) return "https://cdn.simpleicons.org/nodedotjs";
-  if (key.includes("html")) return "https://cdn.simpleicons.org/html5";
-  if (key.includes("css")) return "https://cdn.simpleicons.org/css3";
-  if (key.includes("java")) return "https://cdn.simpleicons.org/java";
-  if (key.includes("figma")) return "https://cdn.simpleicons.org/figma";
-  if (key.includes("tailwind")) return "https://cdn.simpleicons.org/tailwindcss";
-  if (key.includes("typescript")) return "https://cdn.simpleicons.org/typescript";
-  if (key.includes("vue")) return "https://cdn.simpleicons.org/vuedotjs";
-  if (key.includes("php")) return "https://cdn.simpleicons.org/php";
-  return "https://cdn.simpleicons.org/codepen";
-};
-
-// Memoized Feature Card Component
-const FeatureCard = React.memo(({ title, desc, icon: Icon, color, theme }) => (
-  <motion.div
-    whileHover={{ y: -5, scale: 1.02 }}
-    transition={{ type: "spring", stiffness: 200 }}
-    className={`relative p-8 rounded-2xl border shadow-sm hover:shadow-lg overflow-hidden transition
-      ${theme === "dark" ? "bg-gray-900 border-white/10" : "bg-gray-50 border-gray-200"}`}
-  >
-    <div
-      className={`absolute -top-8 -right-8 w-24 h-24 bg-linear-to-br ${color} opacity-10 blur-3xl rounded-full`}
-    />
-    <div
-      className={`w-12 h-12 mb-6 flex items-center justify-center rounded-xl bg-linear-to-br ${color} text-white shadow-lg`}
-    >
-      <Icon size={26} />
-    </div>
-    <h4 className={`text-xl font-semibold mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-      {title}
-    </h4>
-    <p className={`text-sm ${theme === "dark" ? "text-white/80" : "text-gray-600"}`}>
-      {desc}
-    </p>
-  </motion.div>
-));
-
-FeatureCard.displayName = 'FeatureCard';
-
-// Memoized Course Card Component
-const CourseCard = React.memo(({ course, theme }) => {
-  const logoUrl = useMemo(() => getLogoUrl(course.title), [course.title]);
-  
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 250 }}
-      className={`rounded-3xl overflow-hidden border shadow-lg group transition
-        ${theme === "dark" ? "bg-gray-900 border-white/10" : "bg-white border-gray-200"}`}
-    >
-      <div className="p-8">
-        <div className="flex items-center gap-3 mb-3">
-          <img
-            src={logoUrl}
-            alt={course.title}
-            className="w-6 h-6 object-contain"
-            loading="lazy"
-          />
-          <h3 className={`text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-            {course.title}
-          </h3>
-        </div>
-
-        <p className={`text-sm mb-5 line-clamp-3 ${theme === "dark" ? "text-white/80" : "text-gray-600"}`}>
-          {course.description || "Explore expert-curated resources for developers."}
-        </p>
-
-        <div className="flex items-center justify-between">
-          <span className={`text-xs ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>
-            {course.topics_count || 0} topics
-          </span>
-          <Link
-            to={`/courses/${course.slug}`}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow hover:opacity-90"
-          >
-            Explore →
-          </Link>
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-
-CourseCard.displayName = 'CourseCard';
-
-// Memoized Topic Card Component
-const TopicCard = React.memo(({ topic, theme }) => {
-  const courseTitle = topic.course_detail?.title || "";
-  
-  return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      className={`relative rounded-3xl border shadow-lg p-6 transition-all hover:shadow-xl overflow-hidden 
-        ${theme === "dark"
-          ? "bg-linear-to-br from-gray-900 via-gray-950 to-black border-gray-800 text-white"
-          : "bg-white border-gray-200 text-gray-900"
-        }`}
-    >
-      {courseTitle && (
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          <span
-            className={`px-2 py-1 text-xs font-semibold rounded-full
-              ${theme === "dark"
-                ? "bg-indigo-500/20 text-indigo-300"
-                : "bg-indigo-100 text-indigo-700"
-              }`}
-          >
-            {courseTitle}
-          </span>
-        </div>
-      )}
-
-      <h4 className={`font-semibold text-lg mb-3 pr-16 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-        {topic.title}
-      </h4>
-
-      <p
-        className={`text-sm opacity-80 mb-4 line-clamp-3 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
-      >
-        {topic.description || "Fresh insights and trends from the tech world."}
-      </p>
-
-      <Link
-        to={`/topics/by-slug/${topic.slug}`} 
-        className={`inline-block text-xs font-medium underline transition-colors
-          ${theme === "dark"
-            ? "text-indigo-400 hover:text-indigo-300"
-            : "text-indigo-600 hover:text-indigo-500"
-          }`}
-      >
-        Read →
-      </Link>
-    </motion.div>
-  );
-});
-
-TopicCard.displayName = 'TopicCard';
-
-export default function LandingPage() {
-  const [courses, setCourses] = useState([]);
-  const [topics, setTopics] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { theme } = useTheme();
+/* ================================
+   Scroll To Top
+================================ */
+const ScrollTop = () => {
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [courseRes, topicRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/courses/`),
-          axios.get(`${API_BASE_URL}/api/topics/`),
-        ]);
-        
-        if (mounted) {
-          // Handle paginated response from DRF
-          const courseData = courseRes.data.results || courseRes.data || [];
-          const topicData = topicRes.data.results || topicRes.data || [];
-            
-          setCourses(courseData.slice(0, 3));
-          setTopics(topicData.slice(0, 6));
-        }
-      } catch (err) {
-        console.error("Failed to load data:", err);
-        if (mounted) {
-          setError(err.response?.data?.message || "Failed to load content");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-    
-    fetchData();
-
-    return () => {
-      mounted = false;
-    };
+    const onScroll = () => setShow(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Memoize theme-dependent classes
-  const textPrimary = useMemo(() => 
-    theme === "dark" ? "text-white" : "text-gray-900", [theme]
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() =>
+            window.scrollTo({ top: 0, behavior: "smooth" })
+          }
+          className="fixed bottom-6 right-6 z-50 p-3.5 rounded-xl
+            bg-slate-900 dark:bg-white text-white dark:text-slate-900
+            shadow-lg hover:shadow-xl transition-all duration-300
+            hover:scale-110 border border-slate-800 dark:border-slate-200"
+        >
+          <ArrowUp size={18} strokeWidth={2.5} />
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
-  const textSecondary = useMemo(() => 
-    theme === "dark" ? "text-white/80" : "text-gray-600", [theme]
-  );
-  const bgPrimary = useMemo(() => 
-    theme === "dark" ? "bg-gray-950" : "bg-white", [theme]
-  );
+};
+
+/* ================================
+   Modern Card Component
+================================ */
+const ModernCard = ({ theme, className = "", children, hoverable = true }) => (
+  <div
+    className={`rounded-2xl border transition-all duration-300
+      ${theme === "dark"
+        ? "bg-slate-900/50 border-slate-800 backdrop-blur-sm"
+        : "bg-white border-slate-200"
+      }
+      ${hoverable ? "hover:shadow-xl hover:scale-[1.02]" : ""}
+      ${className}`}
+  >
+    {children}
+  </div>
+);
+
+/* ================================
+   Topic Type Badge
+================================ */
+const TypeBadge = ({ type, size = "sm" }) => {
+  const styles = {
+    article: { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-300", icon: BookOpen },
+    video: { bg: "bg-rose-50 dark:bg-rose-900/20", text: "text-rose-700 dark:text-rose-300", icon: Layers },
+    guide: { bg: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-700 dark:text-emerald-300", icon: Zap },
+    reference: { bg: "bg-violet-50 dark:bg-violet-900/20", text: "text-violet-700 dark:text-violet-300", icon: Star },
+    topic: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-300", icon: BookOpen },
+  };
+
+  const config = styles[type] || styles.article;
+  const Icon = config.icon;
+  const sizeClasses = size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm";
 
   return (
-    <div className={`min-h-screen flex flex-col overflow-hidden transition-colors duration-500 ${bgPrimary}`}>
-      {/* Hero Section */}
-      <section className="relative container mx-auto px-6 pt-28 pb-20 grid md:grid-cols-2 gap-10 items-center">
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className={`text-5xl md:text-5xl font-extrabold leading-tight ${textPrimary}`}>
-            Your Safe Space <br />
-            <span className="bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              for Tech Mastery.
-            </span>
-          </h1>
-          <p className={`mt-6 text-base leading-relaxed max-w-lg ${textSecondary}`}>
-            DevNook is a modern space where developers of all levels come to learn, 
-            sharpen their skills, and stay ahead. Explore curated topics, practical 
-            tutorials, and real-world learning paths designed to help you grow with confidence.
-          </p>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium ${config.bg} ${config.text} ${sizeClasses}`}>
+      <Icon size={size === "sm" ? 12 : 14} />
+      {type}
+    </span>
+  );
+};
 
-          <div className="mt-8 flex gap-4">
-            <Link
-              to="/courses"
-              className="px-6 py-3 rounded-full bg-linear-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow-md hover:opacity-90 transition"
+/* ================================
+   Search Component with Results
+================================ */
+const SearchSection = ({ theme, allTopics }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  const filteredTopics = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+
+    const query = searchQuery.toLowerCase();
+    return allTopics
+      .filter(topic =>
+        topic.title.toLowerCase().includes(query) ||
+        (topic.description && topic.description.toLowerCase().includes(query))
+      )
+      .slice(0, 8);
+  }, [searchQuery, allTopics]);
+
+  useEffect(() => {
+    setShowResults(searchQuery.trim().length > 0);
+  }, [searchQuery]);
+
+  const handleClear = () => {
+    setSearchQuery("");
+    setShowResults(false);
+  };
+
+  return (
+    <div className="relative max-w-3xl mx-auto">
+      <div className="relative">
+        <Search
+          className={`absolute left-5 top-1/2 -translate-y-1/2 ${theme === "dark" ? "text-slate-400" : "text-slate-500"
+            }`}
+          size={20}
+        />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search topics, courses, technologies..."
+          className={`w-full pl-14 pr-12 py-4 rounded-2xl border-2 text-sm
+            transition-all duration-300 focus:outline-none
+            ${theme === "dark"
+              ? "bg-slate-900/50 border-slate-800 text-white placeholder:text-slate-500 focus:border-slate-700"
+              : "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-300"
+            }
+            focus:shadow-lg`}
+        />
+        {searchQuery && (
+          <button
+            onClick={handleClear}
+            className={`absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg
+              ${theme === "dark" ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}
+          >
+            <X size={18} className={theme === "dark" ? "text-slate-400" : "text-slate-500"} />
+          </button>
+        )}
+      </div>
+
+      {/* Search Results Dropdown */}
+      <AnimatePresence>
+        {showResults && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`absolute z-50 w-full mt-3 rounded-2xl border overflow-hidden
+              ${theme === "dark"
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-slate-200"
+              }
+              shadow-2xl`}
+          >
+            {filteredTopics.length > 0 ? (
+              <div className="max-h-96 overflow-y-auto">
+                <div className={`px-4 py-3 text-xs font-medium border-b
+                  ${theme === "dark"
+                    ? "text-slate-400 border-slate-800 bg-slate-900/50"
+                    : "text-slate-600 border-slate-200 bg-slate-50"
+                  }`}
+                >
+                  {filteredTopics.length} result{filteredTopics.length !== 1 ? 's' : ''} found
+                </div>
+                {filteredTopics.map((topic, idx) => (
+                  <Link
+                    key={topic.id}
+                    to={`/topics/by-slug/${topic.slug}`}
+                    onClick={() => handleClear()}
+                    className={`block px-5 py-4 border-b transition-colors
+                      ${theme === "dark"
+                        ? "border-slate-800 hover:bg-slate-800/50"
+                        : "border-slate-100 hover:bg-slate-50"
+                      }
+                      ${idx === filteredTopics.length - 1 ? "border-b-0" : ""}
+                    `}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`text-sm font-semibold mb-1 line-clamp-1
+                          ${theme === "dark" ? "text-white" : "text-slate-900"}`}
+                        >
+                          {topic.title}
+                        </h4>
+                        <p className={`text-xs line-clamp-2
+                          ${theme === "dark" ? "text-slate-400" : "text-slate-600"}`}
+                        >
+                          {topic.description || "No description available"}
+                        </p>
+                      </div>
+                      <ChevronRight
+                        size={16}
+                        className={theme === "dark" ? "text-slate-600" : "text-slate-400"}
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5 py-8 text-center">
+                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-slate-600"}`}>
+                  No topics found for "{searchQuery}"
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+/* ================================
+   Beginner Courses Grid
+================================ */
+const BeginnerCoursesSection = ({ theme, courses }) => {
+  const textPrimary = theme === "dark" ? "text-white" : "text-slate-900";
+  const textSecondary = theme === "dark" ? "text-slate-400" : "text-slate-600";
+
+  if (!courses || courses.length === 0) return null;
+
+  return (
+    <section className="container mx-auto px-6 mb-24">
+      <div className="text-center mb-12">
+        <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-semibold mb-4
+          ${theme === "dark"
+            ? "bg-emerald-900/30 text-emerald-300 border border-emerald-800"
+            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+          }`}
+        >
+          Perfect for Beginners
+        </span>
+        <h2 className={`text-3xl md:text-4xl font-bold mb-3 ${textPrimary}`}>
+          Start Your Learning Journey
+        </h2>
+        <p className={`text-sm max-w-2xl mx-auto ${textSecondary}`}>
+          Handpicked courses designed for those taking their first steps in tech.
+          Clear explanations, practical examples, and supportive content.
+        </p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course, idx) => {
+          const Icon = resolveCourseIcon(course.title);
+          return (
+            <motion.div
+              key={course.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
             >
-              Explore Courses
-            </Link>
-            <Link
-              to="/register"
-              className={`px-6 py-3 rounded-full border text-sm font-semibold transition 
-                ${theme === "dark" ? "border-white/30 text-white hover:bg-gray-900" : "border-gray-400 text-gray-700 hover:bg-gray-50"}`}
+              <ModernCard theme={theme} className="p-6 h-full flex flex-col">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4
+                  ${theme === "dark"
+                    ? "bg-slate-800 text-emerald-400"
+                    : "bg-emerald-50 text-emerald-600"
+                  }`}
+                >
+                  <SafeIcon icon={Icon} className="w-6 h-6" />
+                </div>
+
+                <h3 className={`text-lg font-bold mb-2 ${textPrimary}`}>
+                  {course.title}
+                </h3>
+
+                <p className={`text-sm mb-4 flex-1 line-clamp-3 ${textSecondary}`}>
+                  {course.description}
+                </p>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <Link
+                    to={`/courses/${course.slug}`}
+                    className="inline-flex items-center gap-2 text-sm font-semibold
+                      text-emerald-600 dark:text-emerald-400 hover:gap-3 transition-all"
+                  >
+                    Start Learning
+                    <ArrowUpRight size={14} />
+                  </Link>
+                  <span className={`text-xs ${textSecondary}`}>
+                    Beginner
+                  </span>
+                </div>
+              </ModernCard>
+            </motion.div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
+/* ================================
+   Landing Page
+================================ */
+export default function LandingPage() {
+  const { theme } = useTheme();
+
+  const [categories, setCategories] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [beginnerCourses, setBeginnerCourses] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [allTopics, setAllTopics] = useState([]);
+
+  useEffect(() => {
+    // Fetch all topics for search
+    axios.get(`${API_BASE_URL}/api/topics/`).then(res => {
+      const topicsData = res.data.results || res.data;
+      setAllTopics(topicsData);
+      setTopics(topicsData.slice(0, 6));
+    });
+
+    // Fetch categories
+    axios.get(`${API_BASE_URL}/api/categories/`).then(res => {
+      setCategories((res.data.results || res.data).slice(0, 3));
+    });
+
+    // Fetch courses
+    axios.get(`${API_BASE_URL}/api/courses/`).then(res => {
+      const coursesData = res.data.results || res.data;
+      setCourses(coursesData.slice(0, 3));
+
+      // Filter beginner courses (you can customize this logic)
+      const beginnerFiltered = coursesData
+        .filter(course =>
+          course.title.toLowerCase().includes('intro') ||
+          course.title.toLowerCase().includes('beginner') ||
+          course.title.toLowerCase().includes('basics') ||
+          course.title.toLowerCase().includes('fundamentals') ||
+          course.description?.toLowerCase().includes('beginner')
+        )
+        .slice(0, 6);
+
+      // If no courses match, just take the first 6
+      setBeginnerCourses(beginnerFiltered.length > 0 ? beginnerFiltered : coursesData.slice(0, 6));
+    });
+  }, []);
+
+  const textPrimary = theme === "dark" ? "text-white" : "text-slate-900";
+  const textSecondary = theme === "dark" ? "text-slate-400" : "text-slate-600";
+
+  return (
+    <div className="min-h-screen">
+
+      {/* ================= HERO ================= */}
+      <section className="relative pt-24 pb-20">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="order-2 lg:order-1"
             >
-              Join the Community
-            </Link>
-          </div>
+              <div className="mb-6">
+                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold
+                  ${theme === "dark"
+                    ? "bg-slate-800 text-slate-300 border border-slate-700"
+                    : "bg-slate-100 text-slate-700 border border-slate-200"
+                  }`}
+                >
+                  <TrendingUp size={14} />
+                  Knowledge Platform for Developers
+                </span>
+              </div>
 
-          <div className="mt-12 flex gap-12 flex-wrap">
-            <div>
-              <h3 className={`text-3xl font-bold ${textPrimary}`}>80+</h3>
-              <p className={`text-sm ${textSecondary}`}>Tech Topics</p>
-            </div>
-            <div>
-              <h3 className={`text-3xl font-bold ${textPrimary}`}>10K+</h3>
-              <p className={`text-sm ${textSecondary}`}>Active Learners</p>
-            </div>
-          </div>
-        </motion.div>
+              <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${textPrimary}`}>
+                Learn at your own pace.{" "}
+                <span className="text-[#4b9966]">
+                  Master new skills.
+                </span>
+              </h1>
 
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-          <div className="relative w-full">
-            <div className="absolute inset-0 bg-gradient-to-tr from-purple-600/30 to-pink-500/30 rounded-3xl blur-2xl" />
-            <img 
-              src={heroImg} 
-              alt="Hero" 
-              className="relative w-full max-w-md mx-auto rounded-3xl shadow-2xl"
-              loading="eager"
-            />
+
+              <p className={`text-base md:text-lg mb-8 max-w-xl leading-relaxed ${textSecondary}`}>
+                DevNook is a resource-first learning platform. Explore curated content,
+                save what matters, and build knowledge that sticks, all at your own rhythm.
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  to="/categories"
+                  className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all
+                    ${theme === "dark"
+                      ? "bg-white text-slate-900 hover:bg-slate-100"
+                      : "bg-slate-900 text-white hover:bg-slate-800"
+                    }
+                    shadow-lg hover:shadow-xl hover:scale-105`}
+                >
+                  Explore Categories
+                </Link>
+                <Link
+                  to="/courses"
+                  className={`px-6 py-3 rounded-xl border font-semibold text-sm transition-all
+                    ${theme === "dark"
+                      ? "border-slate-700 text-white hover:bg-slate-800"
+                      : "border-slate-300 text-slate-900 hover:bg-slate-50"
+                    }
+                    hover:scale-105`}
+                >
+                  Browse Courses
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Right Image */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="order-1 lg:order-2"
+            >
+              <div className="relative">
+                <div className={`absolute -inset-4 rounded-3xl blur-2xl opacity-20
+                  ${theme === "dark" ? "bg-slate-700" : "bg-slate-300"}`}
+                />
+                <img
+                  src={heroImg}
+                  alt="Learning Experience"
+                  className="relative rounded-2xl shadow-2xl w-full max-w-md mx-auto lg:max-w-none"
+                />
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 border-t border-white/10 container mx-auto px-6">
-        <motion.h2
-          className={`text-3xl font-bold mb-14 text-center ${textPrimary}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          Why DevNook?
-        </motion.h2>
+      {/* ================= SEARCH ================= */}
+      <section className="container mx-auto px-6 mb-20">
+        <SearchSection theme={theme} allTopics={allTopics} />
+      </section>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {FEATURES.map((feature, i) => (
-            <FeatureCard key={i} {...feature} theme={theme} />
+      {/* ================= BEGINNER COURSES ================= */}
+      <BeginnerCoursesSection theme={theme} courses={beginnerCourses} />
+
+      {/* ================= CATEGORIES ================= */}
+      <section className="container mx-auto px-6 mb-24">
+        <div className="text-center mb-12">
+          <h2 className={`text-3xl md:text-4xl font-bold mb-3 ${textPrimary}`}>
+            Explore by Category
+          </h2>
+          <p className={`text-sm ${textSecondary}`}>
+            Dive into organized collections of knowledge
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {categories.map((cat, idx) => (
+            <motion.div
+              key={cat.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+            >
+              <ModernCard theme={theme} className="p-8 h-full flex flex-col">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4
+                  ${theme === "dark" ? "bg-slate-800" : "bg-slate-100"}`}
+                >
+                  <Layers size={20} className={theme === "dark" ? "text-slate-400" : "text-slate-600"} />
+                </div>
+
+                <h3 className={`text-xl font-bold mb-3 ${textPrimary}`}>
+                  {cat.title}
+                </h3>
+
+                <p className={`text-sm mb-6 flex-1 ${textSecondary}`}>
+                  {cat.description || "Explore curated knowledge in this domain."}
+                </p>
+
+                <Link
+                  to={`/categories/${cat.slug}`}
+                  className={`inline-flex items-center gap-2 text-sm font-semibold
+                    ${theme === "dark" ? "text-slate-300" : "text-slate-700"}
+                    hover:gap-3 transition-all`}
+                >
+                  Explore
+                  <ArrowUpRight size={14} />
+                </Link>
+              </ModernCard>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Featured Courses */}
-      <section className="py-20 border-t border-white/10 container mx-auto px-6">
-        <motion.h2
-          className={`text-3xl font-bold mb-12 text-center ${textPrimary}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          Featured Learning Paths
-        </motion.h2>
-
-        {loading ? (
-          <div className="text-center opacity-70 flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <span>Loading courses...</span>
-          </div>
-        ) : error ? (
-          <div className="text-center text-red-500">
-            <p>{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Retry
-            </button>
-          </div>
-        ) : courses.length === 0 ? (
-          <div className="text-center opacity-70">
-            <p>No courses available yet. Check back soon!</p>
-          </div>
-        ) : (
-          <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} theme={theme} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Latest Topics */}
-      <section className="py-20 border-t border-white/10 container mx-auto px-6">
-        <motion.h2
-          className={`text-3xl font-bold mb-12 text-center ${textPrimary}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          Latest Added Topics
-        </motion.h2>
-
-        {loading ? (
-          <div className="text-center opacity-70 flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <span>Loading topics...</span>
-          </div>
-        ) : error ? (
-          <div className="text-center text-red-500">
-            <p>{error}</p>
-          </div>
-        ) : topics.length === 0 ? (
-          <div className="text-center opacity-70">
-            <p>No topics available yet. Check back soon!</p>
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {topics.map((topic) => (
-              <TopicCard key={topic.id} topic={topic} theme={theme} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-20 blur-2xl" />
-        <div className="relative container mx-auto px-6 text-center">
-          <h2 className={`text-4xl font-bold mb-6 ${textPrimary}`}>
-            Join Our Learning Community
+      {/* ================= FEATURED COURSES ================= */}
+      <section className="container mx-auto px-6 mb-24">
+        <div className="text-center mb-12">
+          <h2 className={`text-3xl md:text-4xl font-bold mb-3 ${textPrimary}`}>
+            Featured Courses
           </h2>
-          <p className={`max-w-2xl mx-auto mb-8 ${textSecondary}`}>
-            Be part of a growing ecosystem where developers share, build, and grow together.
-            Let's shape the future of tech education, one project at a time.
+          <p className={`text-sm ${textSecondary}`}>
+            Comprehensive learning paths for skill development
           </p>
-          <Link
-            to="/register"
-            className="inline-block px-8 py-4 rounded-full bg-linear-to-r from-indigo-500 to-purple-600 text-white font-semibold text-lg shadow-md hover:opacity-90 transition"
-          >
-            Get Started Free
-          </Link>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {courses.map((course, idx) => {
+            const Icon = resolveCourseIcon(course.title);
+            return (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <ModernCard theme={theme} className="p-8 h-full flex flex-col group">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors
+                    ${theme === "dark"
+                      ? "bg-slate-800 text-slate-400 group-hover:bg-slate-700"
+                      : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
+                    }`}
+                  >
+                    <SafeIcon icon={Icon} className="w-6 h-6" />
+                  </div>
+
+                  <h3 className={`text-xl font-bold mb-3 ${textPrimary}`}>
+                    {course.title}
+                  </h3>
+
+                  <p className={`text-sm mb-6 flex-1 line-clamp-3 ${textSecondary}`}>
+                    {course.description}
+                  </p>
+
+                  <Link
+                    to={`/courses/${course.slug}`}
+                    className={`inline-flex items-center gap-2 text-sm font-semibold
+                      ${theme === "dark" ? "text-slate-300" : "text-slate-700"}
+                      hover:gap-3 transition-all`}
+                  >
+                    View Course
+                    <ArrowUpRight size={14} />
+                  </Link>
+                </ModernCard>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Chatbot */}
+      {/* ================= RECENT TOPICS ================= */}
+      <section className="container mx-auto px-6 mb-24">
+        <div className="text-center mb-12">
+          <h2 className={`text-3xl md:text-4xl font-bold mb-3 ${textPrimary}`}>
+            Recent Topics
+          </h2>
+          <p className={`text-sm ${textSecondary}`}>
+            Latest additions to our knowledge base
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {topics.map((topic, idx) => {
+            const courseTitle = topic.course_info?.title || "";
+            const CourseIcon = resolveCourseIcon(courseTitle);
+
+            return (
+              <motion.div
+                key={topic.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <ModernCard theme={theme} className="p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <TypeBadge type="topic" />
+                    {courseTitle && CourseIcon && (
+                      <div
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium
+                          ${theme === "dark"
+                            ? "bg-slate-800 text-slate-300"
+                            : "bg-slate-100 text-slate-700"
+                          }`}
+                        title={courseTitle}
+                      >
+                        <SafeIcon icon={CourseIcon} className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate max-w-[120px]">{courseTitle}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <h4 className={`text-base font-bold mb-2 line-clamp-2 ${textPrimary}`}>
+                    {topic.title}
+                  </h4>
+
+                  <p className={`text-sm mb-4 flex-1 line-clamp-2 ${textSecondary}`}>
+                    {topic.description || "Learn more about this topic"}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <Link
+                      to={`/topics/by-slug/${topic.slug}`}
+                      className={`text-sm font-semibold
+                        ${theme === "dark" ? "text-slate-300" : "text-slate-700"}
+                        hover:underline`}
+                    >
+                      Read →
+                    </Link>
+                    <button
+                      className={`p-1.5 rounded-lg transition-colors
+                        ${theme === "dark"
+                          ? "hover:bg-slate-800 text-slate-400"
+                          : "hover:bg-slate-100 text-slate-500"
+                        }`}
+                      title="Save for later"
+                    >
+                      <Bookmark size={14} />
+                    </button>
+                  </div>
+                </ModernCard>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ================= CTA ================= */}
+      <section className="relative py-20 mb-16">
+        <div className="container mx-auto px-6">
+          <ModernCard theme={theme} className="p-12 md:p-16 text-center" hoverable={false}>
+            <div className="max-w-3xl mx-auto">
+              <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${textPrimary}`}>
+                Ready to start learning?
+              </h2>
+              <p className={`text-base mb-8 ${textSecondary}`}>
+                Join thousands of learners building skills that matter.
+                Free to start, forever accessible.
+              </p>
+              <Link
+                to="/register"
+                className={`inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm
+                  ${theme === "dark"
+                    ? "bg-white text-slate-900 hover:bg-slate-100"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
+                  }
+                  shadow-lg hover:shadow-xl transition-all hover:scale-105`}
+              >
+                Get Started Free
+                <ChevronRight size={16} />
+              </Link>
+            </div>
+          </ModernCard>
+        </div>
+      </section>
+
       <Chatbot />
+      <ScrollTop />
     </div>
   );
 }

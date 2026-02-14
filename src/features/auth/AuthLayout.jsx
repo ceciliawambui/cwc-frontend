@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import GlassCard from "../../components/GlassCard";
 import ThemeToggle from "../../components/ThemeToggle";
+import { Terminal } from "lucide-react";
 
 export default function AuthLayout({ title, subtitle, children }) {
   return (
@@ -21,9 +22,16 @@ export default function AuthLayout({ title, subtitle, children }) {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="flex-1 text-center lg:text-left"
           >
-            <h1 className="text-5xl sm:text-6xl font-extrabold gradient-text mb-4">
-              DevNook
-            </h1>
+            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+                <Terminal size={28} strokeWidth={2.5} />
+              </div>
+              <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight
+                 text-slate-900 dark:text-white">
+                DevNook
+              </h1>
+            </div>
+
 
             <p
               className="max-w-lg mx-auto lg:mx-0 leading-relaxed transition-colors"
@@ -64,11 +72,17 @@ export default function AuthLayout({ title, subtitle, children }) {
             transition={{ delay: 0.2, duration: 0.7 }}
             className="flex-1 w-full"
           >
-            <GlassCard className="max-w-md mx-auto p-8 transition-colors duration-500">
-              <h3 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+            <GlassCard className="max-w-md mx-auto p-8 
+                      border border-emerald-500/10
+                      dark:border-emerald-500/20
+                      transition-colors duration-500">
+
+              <h3 className="text-2xl font-semibold mb-2 
+               text-slate-900 dark:text-white">
+
                 {title || "Welcome"}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
                 {subtitle ||
                   "Sign in to manage content or create your learner account."}
               </p>

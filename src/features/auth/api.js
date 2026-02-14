@@ -89,7 +89,7 @@ export async function loginRequest({ email, password }) {
       password: password,
     };
     
-    console.log("Login request payload:", loginPayload);
+    // console.log("Login request payload:", loginPayload);
     
     const res = await client.post("/auth/login/", loginPayload);
 
@@ -107,7 +107,7 @@ export async function loginRequest({ email, password }) {
     localStorage.setItem("auth", JSON.stringify({ access, refresh }));
     localStorage.setItem("user", JSON.stringify(user));
 
-    console.log("Login successful:", { user: user.email, role: user.role });
+    // console.log("Login successful:", { user: user.email, role: user.role });
 
     return res;
   } catch (error) {
@@ -282,6 +282,60 @@ export async function deleteTopic(id) {
  */
 export async function getRecommendedTopics(topicId) {
   const response = await client.get(`/topics/${topicId}/recommended/`);
+  return response.data;
+}
+
+// ========================================================================
+// Categories API
+// ========================================================================
+
+/**
+ * Get all categories
+ * @returns {Promise} List of categories
+ */
+export async function getCategories() {
+  const response = await client.get("/categories/");
+  return response.data;
+}
+
+/**
+ * Get category by ID
+ * @param {string} id - Category ID
+ * @returns {Promise} Category details
+ */
+export async function getCategoryById(id) {
+  const response = await client.get(`/categories/${id}/`);
+  return response.data;
+}
+
+/**
+ * Create new category (admin only)
+ * @param {Object} categoryData - Category data
+ * @returns {Promise} Created category
+ */
+export async function createCategory(categoryData) {
+  const response = await client.post("/categories/", categoryData);
+  return response.data;
+}
+
+/**
+ * Update category (admin only)
+ * @param {string} id - Category ID
+ * @param {Object} categoryData - Updated category data
+ * @returns {Promise} Updated category
+ */
+export async function updateCategory(id, categoryData) {
+  const response = await client.patch(`/categories/${id}/`, categoryData);
+  return response.data;
+}
+
+/**
+ * Delete category (admin only)
+ * @param {string} id - Category ID
+ * @returns {Promise}
+ */
+export async function deleteCategory(id) {
+  const response = await client.delete(`/categories/${id}/`);
   return response.data;
 }
 
