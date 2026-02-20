@@ -1,583 +1,623 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useAuth from "../../hooks/useAuth";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  LogOut,
-  BookOpen,
-  Layers,
-  Bot,
-  Menu,
-  X,
-  Home,
-  Users,
-  Settings,
-  LineChart,
-  Search,
-  Edit3,
-  Trash2,
-  Folder
+  LogOut, BookOpen, Layers, Bot, Menu, X, Home, Users,
+  Settings, LineChart, Search, Edit3, Trash2, Folder,
+  MessageCircle, ChevronRight, TrendingUp, BarChart2,
+  ShieldCheck, User as UserIcon, Bell, ArrowUpRight,
+  Newspaper, Tag, LayoutDashboard, RefreshCw,
 } from "lucide-react";
 import {
-  ResponsiveContainer,
-  Line,
-  LineChart as Chart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
+  ResponsiveContainer, Line, LineChart as Chart,
+  XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  BarChart, Bar,
 } from "recharts";
 import ThemeToggle from "../../components/ThemeToggle";
 import AdminCourses from "./AdminCourses";
-import { useEffect } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import { ShieldCheck, User as UserIcon } from "lucide-react";
 import client from "../../features/auth/api";
-import {
-  BarChart,
-  Legend,
-} from "recharts";
-import { LineChart as LineChartIcon } from "lucide-react";
 import AdminTopics from "./AdminTopics";
-import { Bar } from "recharts";
 import AdminCategories from "./AdminCategories";
 import AdminBlogs from "./AdminBlogs";
+import AdminMessages from "./AdminMessages";
+import { LineChart as LineChartIcon } from "lucide-react";
 
+// ── Sidebar nav config ──────────────────────────────────────────────────────
+const NAV_LINKS = [
+  { name: "Dashboard",  icon: LayoutDashboard, section: "Dashboard"  },
+  { name: "Categories", icon: Tag,              section: "Categories" },
+  { name: "Courses",    icon: BookOpen,         section: "Courses"    },
+  { name: "Topics",     icon: Layers,           section: "Topics"     },
+  { name: "Blogs",      icon: Newspaper,        section: "Blogs"      },
+  { name: "Messages",   icon: MessageCircle,    section: "Messages"   },
+  { name: "Users",      icon: Users,            section: "Users"      },
+  { name: "Settings",   icon: Settings,         section: "Settings"   },
+];
 
+// ── Accent palette ──────────────────────────────────────────────────────────
+const GREEN  = "#4b9966";
+const GREEN_L = "rgba(75,153,102,0.1)";
+const GREEN_B = "rgba(75,153,102,0.2)";
 
+// ═══════════════════════════════════════════════════════════════════════════
 export default function AdminDashboard() {
-
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("Dashboard");
 
-  const navLinks = [
-    { name: "Dashboard", icon: <Home className="w-5 h-5" /> },
-    { name: "Categories", icon: <Bot className="w-5 h-5" /> },
-    { name: "Courses", icon: <BookOpen className="w-5 h-5" /> },
-    { name: "Topics", icon: <Layers className="w-5 h-5" /> },
-    { name: "Blogs", icon: <Folder className="w-5 h-5" /> },
-    { name: "Users", icon: <Users className="w-5 h-5" /> },
-    { name: "Settings", icon: <Settings className="w-5 h-5" /> },
-
-
-  ];
   if (!user || user.role !== "admin") {
     return (
-      <div className="flex items-center justify-center min-h-screen text-red-500">
-        Access denied
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 border-2 border-red-100 flex items-center justify-center mx-auto mb-4">
+            <ShieldCheck size={28} className="text-red-400" />
+          </div>
+          <p className="text-slate-700 font-bold text-lg">Access Denied</p>
+          <p className="text-slate-400 text-sm mt-1">You don't have admin privileges.</p>
+        </div>
       </div>
     );
   }
 
-
-
-  const users = [
-    { id: 1, name: "Jane Doe", email: "jane@example.com", role: "Instructor" },
-    { id: 2, name: "John Smith", email: "john@example.com", role: "Student" },
-    { id: 3, name: "Alice Brown", email: "alice@example.com", role: "Admin" },
-  ];
-
   return (
-    <div className="flex min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-gray-900 dark:via-gray-950 dark:to-black transition-colors">
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-20 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        navLinks={navLinks}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
         logout={logout}
+        user={user}
       />
 
-
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <TopBar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           user={user}
+          activeSection={activeSection}
         />
-
-        <main className="flex-1 px-6 py-8 md:px-10">
-          {activeSection === "Dashboard" && <DashboardOverview />}
-          {activeSection === "Categories" && <AdminCategories />}
-          {activeSection === "Courses" && <AdminCourses />}
-          {activeSection === "Topics" && <AdminTopics />}
-          {activeSection === "Blogs" && <AdminBlogs/>}
-          {activeSection === "Users" && <UserManagement users={users} />}
-          {activeSection === "Settings" && <SettingsPanel />}
-
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-6 py-8 md:px-10 max-w-screen-2xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeSection === "Dashboard"  && <DashboardOverview />}
+                {activeSection === "Categories" && <AdminCategories />}
+                {activeSection === "Courses"    && <AdminCourses />}
+                {activeSection === "Topics"     && <AdminTopics />}
+                {activeSection === "Blogs"      && <AdminBlogs />}
+                {activeSection === "Messages"   && <AdminMessages />}
+                {activeSection === "Users"      && <UserManagement />}
+                {activeSection === "Settings"   && <SettingsPanel />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </main>
       </div>
     </div>
   );
 }
 
-/* 🔹 Sidebar Component */
-function Sidebar({
-  sidebarOpen,
-  setSidebarOpen,
-  navLinks,
-  activeSection,
-  setActiveSection,
-  logout,
-}) {
+// ── Sidebar ─────────────────────────────────────────────────────────────────
+function Sidebar({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection, logout, user }) {
   return (
     <motion.aside
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className={`fixed md:static z-30 inset-y-0 left-0 w-64 transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } bg-white/80 dark:bg-gray-900/70 backdrop-blur-lg border-r border-gray-200 dark:border-gray-800 shadow-xl flex flex-col transition-transform duration-300`}
+      initial={{ x: -280 }}
+      animate={{ x: 0 }}
+      transition={{ type: "spring", damping: 28, stiffness: 200 }}
+      className={`
+        fixed md:sticky top-0 z-30 h-screen w-64 flex flex-col
+        bg-white border-r border-slate-100 shadow-sm
+        transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
     >
-      <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          DevNook
-        </h2>
+      {/* Logo */}
+      <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+            style={{ background: `linear-gradient(135deg, ${GREEN}, #38bdf8)` }}
+          >
+            D
+          </div>
+          <span className="text-slate-900 font-bold text-lg tracking-tight" style={{ fontFamily: "'Georgia', serif" }}>
+            DevNook
+          </span>
+        </div>
         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"
         >
-          <X className="w-5 h-5" />
+          <X size={16} />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-        {navLinks.map((item, idx) => {
-          const isActive = item.name === activeSection;
+      {/* Admin badge */}
+      <div className="px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-slate-50">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || "A")}&background=4b9966&color=fff&size=64`}
+            alt="avatar"
+            className="w-8 h-8 rounded-lg flex-shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-700 truncate">{user?.email || "admin"}</p>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Administrator</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold px-3 mb-3">
+          Navigation
+        </p>
+        {NAV_LINKS.map((item) => {
+          const Icon = item.icon;
+          const active = item.section === activeSection;
           return (
             <motion.button
-              key={idx}
-              whileHover={{ scale: 1.02, x: 4 }}
-              onClick={() => setActiveSection(item.name)}
-              className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${isActive
-                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-                : "text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
-                }`}
+              key={item.name}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { setActiveSection(item.section); setSidebarOpen(false); }}
+              className={`
+                flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold
+                transition-all duration-150 group relative
+                ${active
+                  ? "text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                }
+              `}
+              style={active ? { background: `linear-gradient(135deg, ${GREEN}, #38bdf8)` } : {}}
             >
-              <span className="text-indigo-500">{item.icon}</span>
+              <Icon size={17} className={active ? "text-white" : "text-slate-400 group-hover:text-slate-600"} />
               {item.name}
+              {active && (
+                <motion.div
+                  layoutId="sidebar-active"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <ChevronRight size={14} className="text-white/60" />
+                </motion.div>
+              )}
             </motion.button>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+      {/* Logout */}
+      <div className="p-4 border-t border-slate-100">
         <button
           onClick={logout}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 rounded-lg"
+          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-semibold text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
         >
-          <LogOut size={18} />
-          Logout
+          <LogOut size={16} />
+          Sign out
         </button>
       </div>
     </motion.aside>
   );
 }
 
-/* 🔹 Top Bar Component */
-function TopBar({ sidebarOpen, setSidebarOpen, user }) {
+// ── Top Bar ──────────────────────────────────────────────────────────────────
+function TopBar({ sidebarOpen, setSidebarOpen, user, activeSection }) {
   return (
-    <header className="sticky top-0 z-20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-4 shadow-sm">
+    <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-6 py-3.5 shadow-sm">
       <div className="flex items-center gap-3">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden text-gray-700 dark:text-gray-300"
+          className="md:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
         >
-          <Menu className="w-6 h-6" />
+          <Menu size={20} />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          DevNook Admin Panel
-        </h1>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900 leading-tight" style={{ fontFamily: "'Georgia', serif" }}>
+            {activeSection}
+          </h1>
+          <p className="text-xs text-slate-400 font-medium hidden sm:block">DevNook Admin Panel</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <ThemeToggle />
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          {user?.email || "admin@system.com"}
-        </span>
-        <img
-          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-            user?.email || "Admin"
-          )}&background=6366F1&color=fff`}
-          alt="User Avatar"
-          className="w-9 h-9 rounded-full border border-indigo-400 shadow-sm"
-        />
+        <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-100">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || "A")}&background=4b9966&color=fff&size=64`}
+            alt="avatar"
+            className="w-8 h-8 rounded-xl border-2 border-slate-100"
+          />
+          <span className="text-sm font-semibold text-slate-600 hidden lg:block">
+            {user?.email?.split("@")[0] || "Admin"}
+          </span>
+        </div>
       </div>
     </header>
   );
 }
 
-
-
-/* === Reusable Stat Card === */
-function DashboardCard({ icon, title, value, description }) {
+// ── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, label, value, sub, iconBg, iconColor, accent, delay = 0 }) {
   return (
-    <div className="rounded-2xl bg-white/80 dark:bg-gray-800/50 backdrop-blur-xl border border-gray-200 dark:border-gray-700 p-6 shadow-md hover:shadow-lg transition-shadow">
-      <div className="flex items-center gap-4">
-        <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-700/30 text-indigo-600 dark:text-indigo-300">
-          {icon}
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -2, scale: 1.01 }}
+      className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all duration-300 group"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${iconBg}`}>
+          <Icon size={20} className={iconColor} />
         </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {title}
-          </h3>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            {value}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
-        </div>
+        <ArrowUpRight size={16} className="text-slate-300 group-hover:text-slate-400 transition-colors" />
       </div>
+      <p className="text-2xl font-bold text-slate-900 mb-0.5">{value}</p>
+      <p className="text-sm font-semibold text-slate-600">{label}</p>
+      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    </motion.div>
+  );
+}
+
+// ── Custom Tooltip ───────────────────────────────────────────────────────────
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-lg text-sm">
+      <p className="font-bold text-slate-700 mb-2">{label}</p>
+      {payload.map((item, i) => (
+        <div key={i} className="flex items-center gap-2 text-slate-600">
+          <span className="w-2 h-2 rounded-full" style={{ background: item.color }} />
+          {item.name}: <span className="font-semibold text-slate-800">{item.value}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-/* === Dashboard Overview === */
+// ── Chart card wrapper ───────────────────────────────────────────────────────
+function ChartCard({ title, icon: Icon, iconColor, children }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="flex items-center gap-2.5 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+          <Icon size={16} className={iconColor} />
+        </div>
+        <h3 className="font-bold text-slate-800">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Recent list card ─────────────────────────────────────────────────────────
+function RecentCard({ title, icon: Icon, iconColor, iconBg, items, renderItem }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
+          <Icon size={15} className={iconColor} />
+        </div>
+        <h3 className="font-bold text-slate-700 text-sm">{title}</h3>
+      </div>
+      <ul className="divide-y divide-slate-50 space-y-0">
+        {(items || []).length === 0 ? (
+          <li className="py-4 text-center text-slate-400 text-xs">No data yet</li>
+        ) : (
+          items.map((item, i) => (
+            <li key={item.id || i} className="py-2.5">
+              {renderItem(item)}
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Dashboard Overview
+// ═══════════════════════════════════════════════════════════════════════════
 function DashboardOverview() {
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalAdmins: 0,
-    totalCategories: 0,
-    totalCourses: 0,
-    totalTopics: 0,
-    recentUsers: [],
-    recentCategories: [],
-    recentCourses: [],
-    recentTopics: [],
-    weeklyActivity: [],
-    monthlyTrends: [],
+    totalUsers: 0, totalAdmins: 0, totalCategories: 0,
+    totalCourses: 0, totalTopics: 0, totalBlogs: 0, totalMessages: 0,
+    recentUsers: [], recentCategories: [], recentCourses: [],
+    recentTopics: [], weeklyActivity: [], monthlyTrends: [],
   });
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const fetchStats = async () => {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      try {
-        // const res = await fetch(`${BASE_URL}/api/admin/dashboard/stats/`);
-        // const data = await res.json();
-        const res = await client.get("/admin/dashboard/stats/");
-        const data = res.data;
 
-        setStats({
-          totalUsers: data.totals?.users ?? 0,
-          totalCourses: data.totals?.courses ?? 0,
-          totalTopics: data.totals?.topics ?? 0,
-          totalCategories: data.totals?.categories ?? 0,
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await client.get("/admin/dashboard/stats/");
+      const data = res.data;
+      setStats({
+        totalUsers:       data.totals?.users      ?? 0,
+        totalCourses:     data.totals?.courses    ?? 0,
+        totalTopics:      data.totals?.topics     ?? 0,
+        totalCategories:  data.totals?.categories ?? 0,
+        totalBlogs:       data.totals?.blogs      ?? 0,
+        totalMessages:    data.totals?.messages   ?? 0,
+        weeklyActivity:   data.weeklyActivity     ?? [],
+        monthlyTrends:    data.monthlyTrends      ?? [],
+        recentUsers:      data.recent?.users      ?? [],
+        recentCategories: data.recent?.categories ?? [],
+        recentCourses:    data.recent?.courses    ?? [],
+        recentTopics:     data.recent?.topics     ?? [],
+      });
+    } catch {
+      toast.error("Failed to load analytics.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => { fetchStats(); }, []);
 
-          weeklyActivity: data.weeklyActivity ?? [],
-          monthlyTrends: data.monthlyTrends ?? [],
+  const STAT_CARDS = [
+    {
+      icon: Users,       label: "Total Users",       value: stats.totalUsers,
+      sub: "Registered learners",
+      iconBg: "bg-blue-50", iconColor: "text-blue-600",
+    },
+    {
+      icon: Tag,         label: "Categories",        value: stats.totalCategories,
+      sub: "Learning categories",
+      iconBg: "bg-violet-50", iconColor: "text-violet-600",
+    },
+    {
+      icon: BookOpen,    label: "Courses",            value: stats.totalCourses,
+      sub: "Published & active",
+      iconBg: "bg-emerald-50", iconColor: "text-emerald-600",
+    },
+    {
+      icon: Layers,      label: "Topics",             value: stats.totalTopics,
+      sub: "Learning resources",
+      iconBg: "bg-amber-50", iconColor: "text-amber-600",
+    },
+    {
+      icon: Newspaper,   label: "Blogs",              value: stats.totalBlogs,
+      sub: "Published articles",
+      iconBg: "bg-pink-50", iconColor: "text-pink-600",
+    },
+    {
+      icon: MessageCircle, label: "Messages",         value: stats.totalMessages,
+      sub: "User submissions",
+      iconBg: "bg-cyan-50", iconColor: "text-cyan-600",
+    },
+  ];
 
-          recentUsers: data.recent?.users ?? [],
-          recentCategories: data.recent?.categories ?? [],
-          recentCourses: data.recent?.courses ?? [],
-          recentTopics: data.recent?.topics ?? [],
-        });
-
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to load analytics.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-    // const interval = setInterval(fetchStats, 5000);
-    // return () => clearInterval(interval);
-  }, []);
-
-
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Skeleton header */}
+        <div className="h-8 w-56 bg-slate-100 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 h-32 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="space-y-8">
       <Toaster position="top-right" />
 
-      {/* === Header === */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <LineChartIcon className="w-6 h-6 text-indigo-500" />
-          Dashboard Analytics
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400">
-          Real-time insights for platform performance
-        </p>
+      {/* Page header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2
+            className="text-3xl font-bold text-slate-900"
+            style={{ fontFamily: "'Georgia', serif" }}
+          >
+            Dashboard
+          </h2>
+          <p className="text-slate-500 text-sm mt-0.5">
+            Real-time insights for DevNook platform
+          </p>
+        </div>
+        <button
+          onClick={fetchStats}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white transition-all text-sm font-semibold"
+        >
+          <RefreshCw size={14} />
+          Refresh
+        </button>
       </div>
 
-      {/* === Stats === */}
-      {loading ? (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-10">
-          Loading analytics...
-        </p>
-      ) : (
-        <>
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <DashboardCard
-              icon={<Users className="w-7 h-7" />}
-              title="Total Users"
-              value={stats.totalUsers}
-              description="Registered on the platform"
-            />
-             <DashboardCard
-              icon={<Folder className="w-7 h-7" />}
-              title="Categories"
-              value={stats.totalCategories}
-              description="Learning categories available"
-            />
+      {/* Stat cards — 6 across */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {STAT_CARDS.map((s, i) => (
+          <StatCard key={s.label} {...s} delay={i * 0.06} />
+        ))}
+      </div>
 
-            <DashboardCard
-              icon={<BookOpen className="w-7 h-7" />}
-              title="Courses"
-              value={stats.totalCourses}
-              description="Active and published courses"
-            />
-            <DashboardCard
-              icon={<Layers className="w-7 h-7" />}
-              title="Topics"
-              value={stats.totalTopics}
-              description="Learning topics available"
-            />
+      {/* Charts row */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Weekly line chart */}
+        <ChartCard title="Weekly Activity" icon={TrendingUp} iconColor="text-emerald-600">
+          <ResponsiveContainer width="100%" height={260}>
+            <Chart data={stats.weeklyActivity}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="day" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+              <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ fontSize: 11, paddingTop: 12, color: "#64748b" }}
+              />
+              <Line type="monotone" dataKey="users"      stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: "#6366f1" }}  name="Users"      />
+              <Line type="monotone" dataKey="categories" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3, fill: "#ef4444" }}  name="Categories" />
+              <Line type="monotone" dataKey="courses"    stroke="#ec4899" strokeWidth={2.5} dot={{ r: 3, fill: "#ec4899" }}  name="Courses"    />
+              <Line type="monotone" dataKey="topics"     stroke={GREEN}   strokeWidth={2.5} dot={{ r: 3, fill: GREEN }}      name="Topics"     />
+            </Chart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-          </motion.div>
+        {/* Monthly bar chart */}
+        <ChartCard title="Monthly Growth" icon={BarChart2} iconColor="text-blue-600">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={stats.monthlyTrends} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+              <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12, color: "#64748b" }} />
+              <Bar dataKey="users"      fill="#6366f1" name="Users"      radius={[4,4,0,0]} />
+              <Bar dataKey="categories" fill="#ef4444" name="Categories" radius={[4,4,0,0]} />
+              <Bar dataKey="courses"    fill="#ec4899" name="Courses"    radius={[4,4,0,0]} />
+              <Bar dataKey="topics"     fill={GREEN}   name="Topics"     radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
 
-          {/* === Weekly Line Chart === */}
-          <div className="rounded-2xl p-6 bg-white/80 dark:bg-gray-800/50 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700 mb-10">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <LineChartIcon className="w-5 h-5 text-indigo-500" /> Weekly Activity
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <Chart data={stats.weeklyActivity || []}>
-                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-                <XAxis dataKey="day" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
+      {/* Recent activity row — 4 cols */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">
+          Recent Activity
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <RecentCard
+            title="Recent Users"
+            icon={Users}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-600"
+            items={stats.recentUsers}
+            renderItem={(u) => (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(u.username || u.email || "U")}&background=e2e8f0&color=64748b&size=32`}
+                    className="w-7 h-7 rounded-lg flex-shrink-0"
+                    alt=""
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-700 truncate">{u.username || "Unnamed"}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{u.email}</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
+                  u.role === "admin"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}>
+                  {u.role}
+                </span>
+              </div>
+            )}
+          />
 
-                <Tooltip
-                  // ⚡ Use safe props, no destructuring from undefined
-                  wrapperStyle={{ outline: "none" }}
-                  content={(tooltipProps) => {
-                    if (!tooltipProps || !tooltipProps.active || !tooltipProps.payload?.length) return null;
-                    const { label, payload } = tooltipProps;
+          <RecentCard
+            title="Recent Categories"
+            icon={Tag}
+            iconBg="bg-violet-50"
+            iconColor="text-violet-600"
+            items={stats.recentCategories}
+            renderItem={(cat) => (
+              <div>
+                <p className="text-xs font-semibold text-slate-700">{cat.title}</p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {cat.description || "No description"}
+                </p>
+              </div>
+            )}
+          />
 
-                    return (
-                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{label || "—"}</p>
-                        {payload.map((item, idx) => (
-                          <p key={idx} className="text-gray-600 dark:text-gray-300">
-                            {item.name || "Data"}: {item.value ?? 0}
-                          </p>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
+          <RecentCard
+            title="Recent Courses"
+            icon={BookOpen}
+            iconBg="bg-emerald-50"
+            iconColor="text-emerald-600"
+            items={stats.recentCourses}
+            renderItem={(c) => (
+              <div>
+                <p className="text-xs font-semibold text-slate-700 truncate">{c.title}</p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {c.description || "No description"}
+                </p>
+              </div>
+            )}
+          />
 
-                <Legend />
-                <Line type="monotone" dataKey="users" stroke="#6366F1" strokeWidth={3} dot={{ r: 5 }} name="Users Joined" />
-                <Line type="monotone" dataKey="categories" stroke="#ef4042" strokeWidth={3} dot={{ r: 5 }} name="Categories Added" />
-                <Line type="monotone" dataKey="courses" stroke="#EC4899" strokeWidth={3} dot={{ r: 5 }} name="Courses Added" />
-                <Line
-                  type="monotone"
-                  dataKey="topics"
-                  stroke="#10B981"
-                  strokeWidth={3}
-                  dot={{ r: 5 }}
-                  name="Topics Added"
-                />
-
-              </Chart>
-            </ResponsiveContainer>
-
-
-          </div>
-
-          {/* === Monthly Bar Chart === */}
-          <div className="rounded-2xl p-6 bg-white/80 dark:bg-gray-800/50 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700 mb-10">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Bar className="w-5 h-5 text-pink-500" /> Monthly Growth (Users vs Courses vs Topics)
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.monthlyTrends || []}>
-                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-
-                <Tooltip
-                  wrapperStyle={{ outline: "none" }}
-                  content={(tooltipProps) => {
-                    if (!tooltipProps || !tooltipProps.active || !tooltipProps.payload?.length) return null;
-                    const { label, payload } = tooltipProps;
-
-                    return (
-                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{label || "—"}</p>
-                        {payload.map((item, idx) => (
-                          <p key={idx} className="text-gray-600 dark:text-gray-300">
-                            {item.name || "Data"}: {item.value ?? 0}
-                          </p>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
-
-                <Legend />
-                <Bar dataKey="users" fill="#6366F1" name="Users" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="categories" fill="#ef4042" name="Categories" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="courses" fill="#EC4899" name="Courses" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="topics" fill="#10B981" name="Topics" radius={[6, 6, 0, 0]} />
-                 
-              </BarChart>
-            </ResponsiveContainer>
-
-          </div>
-
-          {/* === Recent Activity === */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Users */}
-            <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Recent Users
-              </h3>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(stats.recentUsers || []).map((u) => (
-                  <li key={u.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {u.username || "Unnamed"}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{u.email}</p>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${u.role === "admin"
-                        ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/30 dark:text-indigo-300"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-300"
-                        }`}
-                    >
-                      {u.role}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-             {/* Categories */}
-             <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Recent Categories
-              </h3>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(stats.recentCategories || []).map((cat) => (
-
-                  <li key={cat.id} className="py-3">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{cat.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {cat.description || "No description available"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Courses */}
-            <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Recent Courses
-              </h3>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(stats.recentCourses || []).map((c) => (
-
-                  <li key={c.id} className="py-3">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{c.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {c.description || "No description available"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {/* Topics */}
-            <div className="rounded-2xl bg-white/70 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Recent Topics
-              </h3>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(stats.recentTopics || []).map((t) => (
-                  <li key={t.id} className="py-3">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{t.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(t.created_at).toLocaleDateString()}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-          </div>
-        </>
-      )}
+          <RecentCard
+            title="Recent Topics"
+            icon={Layers}
+            iconBg="bg-amber-50"
+            iconColor="text-amber-600"
+            items={stats.recentTopics}
+            renderItem={(t) => (
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-semibold text-slate-700 truncate">{t.title}</p>
+                <p className="text-[10px] text-slate-400 flex-shrink-0">
+                  {new Date(t.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                </p>
+              </div>
+            )}
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
-
-
-
+// ═══════════════════════════════════════════════════════════════════════════
+// User Management
+// ═══════════════════════════════════════════════════════════════════════════
 function UserManagement() {
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
+  const [users, setUsers]     = useState([]);
+  const [search, setSearch]   = useState("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-
       const res = await client.get("/users/");
-
-      // --- Log the response ---
-      console.log("Response from /users/:", res);
-      // setUsers(res.data || []);
       setUsers(Array.isArray(res.data?.results) ? res.data.results : []);
-
-    } catch (err) {
-      // --- Log the full error object ---
-      console.error("Error fetching users:", err);
-      if (err.response) {
-        console.error("Status:", err.response.status);
-        console.error("Response data:", err.response.data);
-        console.error("Response headers:", err.response.headers);
-      } else {
-        console.error("No response received, error:", err.message);
-      }
-
-      toast.error("Failed to fetch users (401 or server error).");
+    } catch {
+      toast.error("Failed to fetch users.");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { fetchUsers(); }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // --- Delete User ---
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm("Delete this user? This cannot be undone.")) return;
     try {
       await client.delete(`/api/users/${id}/`);
-      toast.success("User deleted successfully.");
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-    } catch (err) {
-      toast.error("Failed to delete user.");
-    }
+      toast.success("User deleted.");
+      setUsers((p) => p.filter((u) => u.id !== id));
+    } catch { toast.error("Failed to delete user."); }
   };
 
-  // --- Toggle Role ---
   const handleRoleToggle = async (id, currentRole) => {
     const newRole = currentRole === "admin" ? "learner" : "admin";
     setUpdating(id);
@@ -585,159 +625,160 @@ function UserManagement() {
       await client.patch(`/api/users/${id}/`, { role: newRole });
       toast.success(`Role changed to ${newRole}.`);
       fetchUsers();
-    } catch (err) {
-      toast.error("Failed to update role.");
-    } finally {
-      setUpdating(null);
-    }
+    } catch { toast.error("Failed to update role."); }
+    finally { setUpdating(null); }
   };
+
   const safeUsers = Array.isArray(users) ? users : [];
-
   const filtered = safeUsers.filter((u) => {
-    const name = u?.name || u?.username || "";
-    const email = u?.email || "";
     const q = search.toLowerCase();
-
-    return (
-      name.toLowerCase().includes(q) ||
-      email.toLowerCase().includes(q)
-    );
+    return (u.name || u.username || "").toLowerCase().includes(q)
+      || (u.email || "").toLowerCase().includes(q);
   });
 
-  // --- Safe Filtering ---
-  // const filtered = users.filter((u) => {
-  //   const name = u.name || u.username || "";
-  //   const email = u.email || "";
-  //   const q = search.toLowerCase();
-  //   return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
-  // });
-
   return (
-    <div className="rounded-2xl bg-white/80 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="space-y-6">
       <Toaster position="top-right" />
 
-      {/* Header + Search */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          User Management
-        </h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900" style={{ fontFamily: "'Georgia', serif" }}>
+            Users
+          </h2>
+          <p className="text-slate-500 text-sm mt-0.5">Manage platform members and their roles</p>
+        </div>
 
-        <div className="relative w-full sm:w-1/2 max-w-md mx-auto">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+        {/* Search */}
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#4b9966] outline-none transition-all"
           />
         </div>
       </div>
 
-      {/* Table or Empty State */}
-      {loading ? (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-6">
-          Loading users...
-        </p>
-      ) : filtered.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-6">
-          No users found.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="py-3 px-4">Name</th>
-                <th className="px-4">Email</th>
-                <th className="px-4">Role</th>
-                <th className="text-right px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => (
-                <tr
-                  key={u.id}
-                  className="border-b border-gray-100 dark:border-gray-800 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition"
-                >
-                  <td className="py-3 px-4 font-medium flex items-center gap-2">
-                    <UserIcon className="w-4 h-4 text-indigo-500" />{" "}
-                    {u.name || u.username || "Unnamed User"}
-                  </td>
-                  <td className="px-4">{u.email || "—"}</td>
-                  <td className="px-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${u.role === "admin"
-                        ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/30 dark:text-indigo-300"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-300"
-                        }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="text-right px-4 space-x-2">
-                    <button
-                      onClick={() => handleRoleToggle(u.id, u.role)}
-                      disabled={updating === u.id}
-                      className="text-indigo-500 hover:text-indigo-700 disabled:opacity-50"
-                      title="Toggle Role"
-                    >
-                      <ShieldCheck size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(u.id)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Delete User"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+        {/* Table header */}
+        <div className="grid grid-cols-[1fr_1.5fr_1fr_auto] gap-4 px-6 py-3.5 bg-slate-50 border-b border-slate-100">
+          {["Name", "Email", "Role", "Actions"].map((h, i) => (
+            <span key={h} className={`text-[11px] text-slate-400 uppercase tracking-widest font-semibold ${i === 3 ? "text-right" : ""}`}>
+              {h}
+            </span>
+          ))}
         </div>
-      )}
+
+        {loading ? (
+          <div className="py-16 text-center text-slate-400 text-sm">Loading users...</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <Users className="mx-auto mb-3 text-slate-200" size={40} />
+            <p className="text-slate-500 font-semibold">No users found</p>
+          </div>
+        ) : (
+          filtered.map((u, idx) => (
+            <motion.div
+              key={u.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.03 }}
+              className="grid grid-cols-[1fr_1.5fr_1fr_auto] gap-4 px-6 py-4 border-b border-slate-50 items-center hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(u.username || u.email || "U")}&background=e2e8f0&color=64748b&size=32`}
+                  className="w-8 h-8 rounded-lg flex-shrink-0"
+                  alt=""
+                />
+                <p className="text-sm font-semibold text-slate-700 truncate">{u.name || u.username || "Unnamed"}</p>
+              </div>
+              <p className="text-sm text-slate-500 truncate">{u.email || "—"}</p>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${
+                u.role === "admin"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-slate-100 text-slate-500 border border-slate-200"
+              }`}>
+                {u.role}
+              </span>
+              <div className="flex items-center gap-1 justify-end">
+                <button
+                  onClick={() => handleRoleToggle(u.id, u.role)}
+                  disabled={updating === u.id}
+                  className="p-2 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-all disabled:opacity-50"
+                  title="Toggle Role"
+                >
+                  <ShieldCheck size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(u.id)}
+                  className="p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"
+                  title="Delete"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
 
-
-
-/* 🔹 Settings Section */
+// ═══════════════════════════════════════════════════════════════════════════
+// Settings Panel
+// ═══════════════════════════════════════════════════════════════════════════
 function SettingsPanel() {
   return (
-    <div className="rounded-2xl bg-white/80 dark:bg-gray-800/50 p-6 backdrop-blur-xl shadow-md border border-gray-200 dark:border-gray-700 space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        System Settings
-      </h2>
-
+    <div className="space-y-6 max-w-2xl">
       <div>
-        <label className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
-          System Name
-        </label>
-        <input
-          type="text"
-          defaultValue="TechFlare"
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <h2 className="text-3xl font-bold text-slate-900" style={{ fontFamily: "'Georgia', serif" }}>
+          Settings
+        </h2>
+        <p className="text-slate-500 text-sm mt-0.5">Configure your platform preferences</p>
       </div>
 
-      <div>
-        <label className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
-          Default Language
-        </label>
-        <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option>English</option>
-          <option>French</option>
-          <option>Spanish</option>
-        </select>
-      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-5">
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">
+          General
+        </h3>
 
-      <button className="px-5 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium shadow-md">
-        Save Changes
-      </button>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              System Name
+            </label>
+            <input
+              type="text"
+              defaultValue="DevNook"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-[#4b9966] focus:bg-white outline-none transition-all font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              Default Language
+            </label>
+            <select className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-[#4b9966] focus:bg-white outline-none transition-all font-medium">
+              <option>English</option>
+              <option>French</option>
+              <option>Spanish</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <button
+            className="px-6 py-3 rounded-xl font-semibold text-sm text-white shadow-md hover:shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+            style={{ background: "linear-gradient(135deg, #4b9966, #38bdf8)" }}
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-

@@ -7,7 +7,6 @@ import {
   Trash2,
   Loader2,
   Plus,
-  X,
   AlertTriangle,
   FileText,
   Video,
@@ -16,16 +15,11 @@ import {
   XCircle,
   TrendingUp,
   Clock,
-  Eye,
-  EyeOff,
   ChevronLeft,
   ChevronRight,
   Grid3x3,
   List as ListIcon,
   Layers,
-  Filter,
-  Award,
-  Calendar,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import client from "../../features/auth/api";
@@ -34,18 +28,33 @@ import BlockEditor from "../../components/BlockEditor";
 const PAGE_SIZE = 9;
 
 const DIFFICULTY_OPTIONS = [
-  { value: "beginner", label: "Beginner", color: "green" },
+  { value: "beginner",     label: "Beginner",     color: "green"  },
   { value: "intermediate", label: "Intermediate", color: "yellow" },
-  { value: "advanced", label: "Advanced", color: "red" },
+  { value: "advanced",     label: "Advanced",     color: "red"    },
 ];
 
-/* Topic Card Component */
+// Static Tailwind class maps — dynamic template literals like `bg-${color}-100`
+// are stripped by Tailwind's purge/content scanner in production builds.
+// Using a lookup map ensures the full class strings are present in source.
+const DIFFICULTY_BADGE_CLASSES = {
+  beginner:     "bg-green-100  text-green-700  dark:bg-green-900/30  dark:text-green-400",
+  intermediate: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  advanced:     "bg-red-100    text-red-700    dark:bg-red-900/30    dark:text-red-400",
+};
+
+const ANALYTICS_CARD_CLASSES = {
+  blue:   { text: "text-blue-600   dark:text-blue-400",   bg: "bg-blue-100   dark:bg-blue-900/30"   },
+  green:  { text: "text-green-600  dark:text-green-400",  bg: "bg-green-100  dark:bg-green-900/30"  },
+  cyan:   { text: "text-cyan-600   dark:text-cyan-400",   bg: "bg-cyan-100   dark:bg-cyan-900/30"   },
+  orange: { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-100 dark:bg-orange-900/30" },
+};
+
+/* ─── Topic Card Component ────────────────────────────────────────────────── */
 const TopicCard = memo(({ topic, onEdit, onDelete }) => (
   <motion.div
     whileHover={{ y: -4 }}
     className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
   >
-    {/* Header Badge */}
     <div className="h-2 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
 
     <div className="p-5">
@@ -71,11 +80,10 @@ const TopicCard = memo(({ topic, onEdit, onDelete }) => (
         {topic.description || "No description provided."}
       </p>
 
-      {/* Meta Info */}
       <div className="flex items-center gap-3 mb-4 text-xs">
         {topic.difficulty && (
-          <span className={`px-2 py-1 rounded-full font-medium bg-${DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.color}-100 text-${DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.color}-700`}>
-            {DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.label}
+          <span className={`px-2 py-1 rounded-full font-medium ${DIFFICULTY_BADGE_CLASSES[topic.difficulty] || "bg-gray-100 text-gray-700"}`}>
+            {DIFFICULTY_OPTIONS.find((d) => d.value === topic.difficulty)?.label}
           </span>
         )}
         {topic.reading_time && (
@@ -92,7 +100,6 @@ const TopicCard = memo(({ topic, onEdit, onDelete }) => (
         )}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
         <button
           onClick={() => onEdit(topic)}
@@ -117,6 +124,7 @@ const TopicCard = memo(({ topic, onEdit, onDelete }) => (
 ));
 TopicCard.displayName = "TopicCard";
 
+/* ─── Main Component ──────────────────────────────────────────────────────── */
 export default function AdminTopics() {
   const [topics, setTopics] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -161,7 +169,7 @@ export default function AdminTopics() {
   const [editorBlocks, setEditorBlocks] = useState([]);
   const abortRef = useRef(null);
 
-  /* FETCH DATA */
+  /* ── FETCH DATA ────────────────────────────────────────────────────────── */
   useEffect(() => {
     fetchData();
     return () => abortRef.current?.abort();
@@ -181,19 +189,18 @@ export default function AdminTopics() {
       ]);
 
       const categoryData = catRes.data.results || catRes.data || [];
-      const courseData = courseRes.data.results || courseRes.data || [];
-      const topicData = topicRes.data.results || topicRes.data || [];
+      const courseData   = courseRes.data.results || courseRes.data || [];
+      const topicData    = topicRes.data.results || topicRes.data || [];
 
-      // Enrich topic data with course details if missing
-      const enrichedTopics = topicData.map(topic => {
+      const enrichedTopics = topicData.map((topic) => {
         if (!topic.course_info && topic.course) {
-          const course = courseData.find(c => c.id === topic.course);
+          const course = courseData.find((c) => c.id === topic.course);
           if (course) {
             topic.course_info = {
               id: course.id,
               title: course.title,
               slug: course.slug,
-              category_info: course.category_info
+              category_info: course.category_info,
             };
           }
         }
@@ -222,7 +229,7 @@ export default function AdminTopics() {
     setPublishedCount(data.filter((t) => t.is_published).length);
   }
 
-  /* FILTERING */
+  /* ── FILTERING ─────────────────────────────────────────────────────────── */
   useEffect(() => {
     let out = [...topics];
     const q = search.trim().toLowerCase();
@@ -234,15 +241,12 @@ export default function AdminTopics() {
           (t.description || "").toLowerCase().includes(q)
       );
     }
-
     if (selectedCourse) {
       out = out.filter((t) => String(t.course) === String(selectedCourse));
     }
-
     if (difficultyFilter !== "all") {
       out = out.filter((t) => t.difficulty === difficultyFilter);
     }
-
     if (statusFilter === "published") {
       out = out.filter((t) => t.is_published);
     } else if (statusFilter === "draft") {
@@ -258,46 +262,43 @@ export default function AdminTopics() {
     : courses;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = React.useMemo(() => {
+  const paginated  = React.useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, page]);
 
-  /* MODAL HANDLERS */
+  /* ── MODAL HANDLERS ────────────────────────────────────────────────────── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleOpen = useCallback(async (topic = null) => {
     if (topic) {
       setEditing(topic);
       setForm({
-        title: topic.title || "",
-        description: topic.description || "",
-        video_url: topic.video_url || "",
-        course: topic.course || "",
-        difficulty: topic.difficulty || "beginner",
+        title:        topic.title        || "",
+        description:  topic.description  || "",
+        video_url:    topic.video_url    || "",
+        course:       topic.course       || "",
+        difficulty:   topic.difficulty   || "beginner",
         reading_time: topic.reading_time || 5,
         is_published: topic.is_published !== undefined ? topic.is_published : true,
       });
 
       try {
         const res = await client.get(`/topics/${topic.id}/`);
-        const existingBlocks = res.data.content_version === "v2" && Array.isArray(res.data.content)
-          ? res.data.content
-          : [];
+        const existingBlocks =
+          Array.isArray(res.data.content) && res.data.content.length > 0
+            ? res.data.content
+            : [];
         setEditorBlocks(existingBlocks);
-      } catch {
-        toast.error("Failed to load topic content");
+      } catch (err) {
+        toast.error("Failed to load topic content", err);
       }
     } else {
       setEditing(null);
       setForm({
-        title: "",
-        description: "",
-        video_url: "",
-        course: "",
-        difficulty: "beginner",
-        reading_time: 5,
-        is_published: true,
+        title: "", description: "", video_url: "",
+        course: "", difficulty: "beginner",
+        reading_time: 5, is_published: true,
       });
-
       setEditorBlocks([]);
     }
 
@@ -306,38 +307,47 @@ export default function AdminTopics() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
-      setForm((s) => ({ ...s, [name]: checked }));
-    } else {
-      setForm((s) => ({ ...s, [name]: value }));
-    }
+    setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
   };
 
-  /* SAVE */
+  /* ── SAVE ──────────────────────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    if (!form.title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    if (!form.course) {
-      toast.error("Course is required");
-      return;
-    }
+    if (!form.title.trim()) { toast.error("Title is required");  return; }
+    if (!form.course)        { toast.error("Course is required"); return; }
 
     setSaving(true);
 
+    // ── Sanitize blocks: strip any internal editor-only keys, ensure url is a string ──
+    const cleanBlocks = editorBlocks.map((block) => {
+      if (block.type === "image") {
+        return {
+          ...block,
+          data: {
+            url:     block.data.url     || "",
+            alt:     block.data.alt     || "",
+            caption: block.data.caption || "",
+          },
+        };
+      }
+      return block;
+    });
 
     const payload = {
-      title: form.title.trim(),
-      description: form.description.trim(),
-      video_url: form.video_url.trim(),
-      course: form.course,
-      difficulty: form.difficulty,
-      reading_time: parseInt(form.reading_time) || 5,
+      title:        form.title.trim(),
+      // Send null instead of empty string for optional text fields so Django
+      // doesn't choke on blank CharField / URLField depending on your model config.
+      description:  form.description.trim() || null,
+      // ▼ KEY FIX: Django URLField rejects "" — send null when no URL is given.
+      video_url:    form.video_url.trim() || null,
+      course:       form.course,
+      difficulty:   form.difficulty,
+      reading_time: parseInt(form.reading_time, 10) || 5,
       is_published: form.is_published,
-      content: editorBlocks,   // ← block array goes straight to API
+      content:      cleanBlocks,
     };
 
+    // Log so you can see exactly what goes to the API in dev
+    console.log("[AdminTopics] saving payload:", JSON.stringify(payload, null, 2));
 
     try {
       let res;
@@ -352,15 +362,35 @@ export default function AdminTopics() {
       }
       handleClose();
     } catch (e) {
-      console.error("Save error:", e);
-      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed to save topic";
+      // ── Extract and log the full Django error body ──────────────────────
+      const responseData = e.response?.data;
+      console.error("[AdminTopics] Save error:", e);
+      console.error("[AdminTopics] Django response body:", responseData);
+
+      // Try to surface the most useful validation message to the user
+      let errorMsg = "Failed to save topic";
+      if (responseData) {
+        if (typeof responseData === "string") {
+          errorMsg = responseData;
+        } else if (responseData.detail) {
+          errorMsg = responseData.detail;
+        } else {
+          // Django returns field-level errors as { field: ["msg", ...] }
+          const firstKey = Object.keys(responseData)[0];
+          if (firstKey) {
+            const fieldErrors = responseData[firstKey];
+            const msg = Array.isArray(fieldErrors) ? fieldErrors[0] : fieldErrors;
+            errorMsg = `${firstKey}: ${msg}`;
+          }
+        }
+      }
       toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
   };
 
-  /* DELETE */
+  /* ── DELETE ────────────────────────────────────────────────────────────── */
   const confirmDelete = (topic) => {
     setTopicToDelete(topic);
     setShowDeleteModal(true);
@@ -375,8 +405,10 @@ export default function AdminTopics() {
       setShowDeleteModal(false);
       setTopicToDelete(null);
     } catch (e) {
-      console.error("Delete error:", e);
-      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed to delete topic";
+      const errorMsg =
+        e.response?.data?.detail ||
+        e.response?.data?.message ||
+        "Failed to delete topic";
       toast.error(errorMsg);
     }
   };
@@ -387,9 +419,11 @@ export default function AdminTopics() {
     setEditorBlocks([]);
   };
 
+  /* ── RENDER ────────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
+
         {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -416,73 +450,31 @@ export default function AdminTopics() {
 
           {/* ANALYTICS CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Topics</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                    {topics.length}
-                  </p>
+            {[
+              { label: "Total Topics",  value: topics.length,  color: "blue",   Icon: FileText     },
+              { label: "Published",     value: publishedCount, color: "green",  Icon: CheckCircle2 },
+              { label: "New This Week", value: newThisWeek,    color: "cyan",   Icon: TrendingUp   },
+              { label: "Courses",       value: courses.length, color: "orange", Icon: BookOpen     },
+            // eslint-disable-next-line no-unused-vars
+            ].map(({ label, value, color, Icon }) => (
+              <motion.div
+                key={label}
+                whileHover={{ scale: 1.02 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
+                    <p className={`text-3xl font-bold mt-1 ${ANALYTICS_CARD_CLASSES[color]?.text}`}>
+                      {value}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-xl ${ANALYTICS_CARD_CLASSES[color]?.bg}`}>
+                    <Icon className={ANALYTICS_CARD_CLASSES[color]?.text} size={24} />
+                  </div>
                 </div>
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-xl">
-                  <FileText className="text-blue-600 dark:text-blue-400" size={24} />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Published</p>
-                  <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
-                    {publishedCount}
-                  </p>
-                </div>
-                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-xl">
-                  <CheckCircle2 className="text-green-600 dark:text-green-400" size={24} />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">New This Week</p>
-                  <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mt-1">
-                    {newThisWeek}
-                  </p>
-                </div>
-                <div className="bg-cyan-100 dark:bg-cyan-900/30 p-3 rounded-xl">
-                  <TrendingUp className="text-cyan-600 dark:text-cyan-400" size={24} />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Courses</p>
-                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">
-                    {courses.length}
-                  </p>
-                </div>
-                <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-xl">
-                  <BookOpen className="text-orange-600 dark:text-orange-400" size={24} />
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
 
@@ -494,7 +486,6 @@ export default function AdminTopics() {
           className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6"
         >
           <div className="flex flex-wrap gap-4 items-center">
-            {/* Search */}
             <div className="relative flex-1 min-w-[250px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -505,24 +496,17 @@ export default function AdminTopics() {
               />
             </div>
 
-            {/* Category Filter */}
             <select
               value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedCourse("");
-              }}
+              onChange={(e) => { setSelectedCategory(e.target.value); setSelectedCourse(""); }}
               className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 min-w-[160px]"
             >
               <option value="">All Categories</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
+                <option key={c.id} value={c.id}>{c.title}</option>
               ))}
             </select>
 
-            {/* Course Filter */}
             <select
               value={selectedCourse}
               onChange={(e) => setSelectedCourse(e.target.value)}
@@ -530,13 +514,10 @@ export default function AdminTopics() {
             >
               <option value="">All Courses</option>
               {filteredCourses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
+                <option key={c.id} value={c.id}>{c.title}</option>
               ))}
             </select>
 
-            {/* Difficulty Filter */}
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
@@ -544,13 +525,10 @@ export default function AdminTopics() {
             >
               <option value="all">All Levels</option>
               {DIFFICULTY_OPTIONS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
+                <option key={d.value} value={d.value}>{d.label}</option>
               ))}
             </select>
 
-            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -561,26 +539,24 @@ export default function AdminTopics() {
               <option value="draft">Draft</option>
             </select>
 
-            {/* View Toggle */}
             <div className="flex gap-2 ml-auto">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-3 rounded-xl transition-all ${viewMode === "grid"
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600"
+              {[
+                { mode: "grid", Icon: Grid3x3 },
+                { mode: "list", Icon: ListIcon },
+              // eslint-disable-next-line no-unused-vars
+              ].map(({ mode, Icon }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`p-3 rounded-xl transition-all ${
+                    viewMode === mode
+                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600"
                   }`}
-              >
-                <Grid3x3 size={20} />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-3 rounded-xl transition-all ${viewMode === "list"
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600"
-                  }`}
-              >
-                <ListIcon size={20} />
-              </button>
+                >
+                  <Icon size={20} />
+                </button>
+              ))}
             </div>
           </div>
         </motion.div>
@@ -592,7 +568,7 @@ export default function AdminTopics() {
           </p>
         </div>
 
-        {/* TOPICS GRID/LIST */}
+        {/* TOPICS GRID / LIST */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -604,9 +580,7 @@ export default function AdminTopics() {
             className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-100 dark:border-gray-700"
           >
             <Layers className="mx-auto mb-4 text-gray-300 dark:text-gray-600" size={48} />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              No topics found
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No topics found</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               {search ? "Try adjusting your search" : "Get started by creating your first topic"}
             </p>
@@ -615,8 +589,7 @@ export default function AdminTopics() {
                 onClick={() => handleOpen()}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:shadow-lg transition-all"
               >
-                <Plus size={20} />
-                Create First Topic
+                <Plus size={20} /> Create First Topic
               </button>
             )}
           </motion.div>
@@ -654,36 +627,29 @@ export default function AdminTopics() {
                 <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
                   <FileText className="text-white" size={24} />
                 </div>
-
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                    {topic.title}
-                  </h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">{topic.title}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                     {topic.course_info?.title || "Unassigned"}
                   </p>
                 </div>
-
                 <div className="flex items-center gap-3">
                   {topic.difficulty && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.color}-100 text-${DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.color}-700`}>
-                      {DIFFICULTY_OPTIONS.find(d => d.value === topic.difficulty)?.label}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${DIFFICULTY_BADGE_CLASSES[topic.difficulty] || "bg-gray-100 text-gray-700"}`}>
+                      {DIFFICULTY_OPTIONS.find((d) => d.value === topic.difficulty)?.label}
                     </span>
                   )}
-
                   {topic.is_published ? (
                     <CheckCircle2 className="text-green-500" size={20} />
                   ) : (
                     <XCircle className="text-gray-400" size={20} />
                   )}
-
                   <button
                     onClick={() => handleOpen(topic)}
                     className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
                   >
                     <Edit3 size={18} className="text-blue-600" />
                   </button>
-
                   <button
                     onClick={() => confirmDelete(topic)}
                     className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
@@ -704,28 +670,27 @@ export default function AdminTopics() {
             className="flex justify-center items-center gap-2 mt-8"
           >
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
               <ChevronLeft size={20} />
             </button>
-
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${page === p
-                  ? "bg-blue-600 text-white"
-                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  page === p
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
               >
                 {p}
               </button>
             ))}
-
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
@@ -734,7 +699,7 @@ export default function AdminTopics() {
           </motion.div>
         )}
 
-        {/* CREATE/EDIT MODAL */}
+        {/* CREATE / EDIT MODAL */}
         <AnimatePresence>
           {modalOpen && (
             <motion.div
@@ -762,7 +727,9 @@ export default function AdminTopics() {
                         {editing ? "Edit Topic" : "Create New Topic"}
                       </h2>
                       <p className="text-xs text-gray-500">
-                        {editing ? "Update your content below" : "Fill in the details to create a new learning resource"}
+                        {editing
+                          ? "Update your content below"
+                          : "Fill in the details to create a new learning resource"}
                       </p>
                     </div>
                   </div>
@@ -778,26 +745,31 @@ export default function AdminTopics() {
                       disabled={saving}
                       className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 transition"
                     >
-                      {saving ? "Saving..." : "Save Topic"}
+                      {saving ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Saving…
+                        </>
+                      ) : (
+                        "Save Topic"
+                      )}
                     </button>
                   </div>
                 </div>
 
-                {/* Modal Body: Split Layout */}
+                {/* Modal Body */}
                 <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-gray-50 dark:bg-gray-950/50">
                   {/* LEFT: Editor */}
                   <div className="flex-1 flex flex-col min-h-[50%] lg:h-auto border-r border-gray-200 dark:border-gray-800 overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 opacity-20" />
-
                     <div className="flex-1 p-6 lg:p-10 overflow-hidden flex flex-col">
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
                         Content Editor
                         <span className="text-xs font-normal text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                          Type '/' for commands
+                          Add blocks below
                         </span>
                       </label>
                       <div className="flex-1 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-
                         <BlockEditor
                           key={editing ? editing.id : "new"}
                           initialContent={editorBlocks}
@@ -826,11 +798,9 @@ export default function AdminTopics() {
                           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm"
                           required
                         >
-                          <option value="">Select a Course...</option>
+                          <option value="">Select a Course…</option>
                           {courses.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.title}
-                            </option>
+                            <option key={c.id} value={c.id}>{c.title}</option>
                           ))}
                         </select>
                       </div>
@@ -847,7 +817,6 @@ export default function AdminTopics() {
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm"
                           placeholder="e.g. React Hooks Deep Dive"
-                          required
                         />
                       </div>
 
@@ -862,7 +831,7 @@ export default function AdminTopics() {
                           value={form.description}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm leading-relaxed"
-                          placeholder="A short description displayed on the topic card..."
+                          placeholder="A short description displayed on the topic card…"
                         />
                       </div>
 
@@ -879,17 +848,13 @@ export default function AdminTopics() {
                             className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                           >
                             {DIFFICULTY_OPTIONS.map((d) => (
-                              <option key={d.value} value={d.value}>
-                                {d.label}
-                              </option>
+                              <option key={d.value} value={d.value}>{d.label}</option>
                             ))}
                           </select>
                         </div>
-
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-                            <Clock size={12} />
-                            Read Time
+                            <Clock size={12} /> Read Time
                           </label>
                           <input
                             type="number"
@@ -906,8 +871,7 @@ export default function AdminTopics() {
                       {/* Video URL */}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-                          <Video size={12} />
-                          Video URL (Optional)
+                          <Video size={12} /> Video URL (Optional)
                         </label>
                         <input
                           type="url"
@@ -915,7 +879,7 @@ export default function AdminTopics() {
                           value={form.video_url}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                          placeholder="https://youtube.com/..."
+                          placeholder="https://youtube.com/…"
                         />
                       </div>
 
@@ -935,12 +899,10 @@ export default function AdminTopics() {
                             onChange={handleChange}
                             className="sr-only peer"
                           />
-                          <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                          <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
                         </label>
                       </div>
                     </div>
-
-                    {/* Pro Tip */}
 
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
                       <h4 className="text-blue-700 dark:text-blue-300 font-bold text-xs uppercase mb-1">
@@ -948,8 +910,7 @@ export default function AdminTopics() {
                       </h4>
                       <p className="text-xs text-blue-600 dark:text-blue-400 leading-relaxed">
                         Use <strong>Add Block</strong> at the bottom of the editor to insert text,
-                        code (with Monaco), headings, or callout notes. Use the arrows to reorder blocks.
-                        Code blocks support 20+ languages with full syntax highlighting.
+                        code (with Monaco), headings, images, or callout notes. Use the arrows to reorder blocks.
                       </p>
                     </div>
                   </div>
@@ -981,23 +942,17 @@ export default function AdminTopics() {
                     <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      Delete Topic
-                    </h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Delete Topic</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       This action cannot be undone
                     </p>
                   </div>
                 </div>
-
                 <p className="text-gray-700 dark:text-gray-300 mb-6">
                   Are you sure you want to delete{" "}
-                  <strong className="text-gray-900 dark:text-white">
-                    {topicToDelete?.title}
-                  </strong>
-                  ? All content will be permanently removed.
+                  <strong className="text-gray-900 dark:text-white">{topicToDelete?.title}</strong>?
+                  All content will be permanently removed.
                 </p>
-
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowDeleteModal(false)}

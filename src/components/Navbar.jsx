@@ -81,6 +81,7 @@ export default function Navbar() {
               <NavItem to="/courses" label="Courses" theme={theme} />
               <NavItem to="/topics" label="Topics" theme={theme} />
               <NavItem to="/blogs" label="Blogs" theme={theme} />
+              <NavItem to="/contact" label="Contact" theme={theme} />
 
               {user && (
                 <NavItem to="/dashboard" label="Library" theme={theme} />
@@ -167,6 +168,7 @@ export default function Navbar() {
                 <MobileLink to="/categories" label="Categories" setMenuOpen={setMenuOpen} theme={theme} />
                 <MobileLink to="/courses" label="Courses" setMenuOpen={setMenuOpen} theme={theme} />
                 <MobileLink to="/blogs" label="Blogs" setMenuOpen={setMenuOpen} theme={theme} />
+                <MobileLink to="/contact" label="Contact" setMenuOpen={setMenuOpen} theme={theme} />
                 {user && (
                   <MobileLink
                     to="/dashboard"

@@ -8,6 +8,7 @@ import {
   Clock, BookOpen, AlertCircle, Lightbulb,
   AlertTriangle, XCircle, ChevronLeft, ChevronRight,
   BarChart2, List, Play, VideoOff, Layers,
+  ZoomIn, X as XIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import client from "../../auth/api";
@@ -119,31 +120,31 @@ function CodeBlock({ data }) {
 
   return (
     <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35 }}
-    viewport={{ once: true }}
-    className="my-6 rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-gray-800/80"
-  >
-    <div className="flex items-center justify-between px-5 py-3 bg-[#13151a] border-b border-gray-800/80">
-      <div className="flex items-center gap-3">
-        <div className="flex gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-          <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-          <span className="w-3 h-3 rounded-full bg-[#28c840]" />
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      viewport={{ once: true }}
+      className="my-6 rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-gray-800/80"
+    >
+      <div className="flex items-center justify-between px-5 py-3 bg-[#13151a] border-b border-gray-800/80">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+            <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+            <span className="w-3 h-3 rounded-full bg-[#28c840]" />
+          </div>
+          {data.filename && (
+            <span className="text-xs font-mono text-gray-400 bg-gray-800/80 border border-gray-700 px-2 py-0.5 rounded-md">
+              {data.filename}
+            </span>
+          )}
+          {data.language && data.language !== "plaintext" && (
+            <span className="text-[10px] uppercase tracking-[0.12em] font-bold text-gray-300">
+              {data.language}
+            </span>
+          )}
         </div>
-        {data.filename && (
-          <span className="text-xs font-mono text-gray-400 bg-gray-800/80 border border-gray-700 px-2 py-0.5 rounded-md">
-            {data.filename}
-          </span>
-        )}
-        {data.language && data.language !== "plaintext" && (
-          <span className="text-[10px] uppercase tracking-[0.12em] font-bold text-gray-300">
-            {data.language}
-          </span>
-        )}
-      </div>
-      <button
+        <button
           onClick={handleCopy}
           className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold border-2 transition-all duration-200
             ${copied
@@ -155,8 +156,8 @@ function CodeBlock({ data }) {
             ? <><Check size={12} strokeWidth={2.5} /><span>Copied!</span></>
             : <><Copy size={12} strokeWidth={2} /><span>Copy</span></>
           }
-          </button>
-    </div>
+        </button>
+      </div>
       <div className="bg-[#0d1117]">
         <Editor
           height={`${editorHeight}px`}
@@ -229,19 +230,134 @@ function NoteBlock({ data, theme }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────
+   IMAGE BLOCK RENDERER  ← THE MISSING PIECE (now added)
+───────────────────────────────────────────────────────────── */
+function ImageBlockRenderer({ data, theme }) {
+  const isDark = theme === "dark";
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imgError, setImgError]         = useState(false);
+
+  if (!data.url) return null;
+
+  if (imgError) {
+    return (
+      <div className={`my-6 flex items-center justify-center gap-3 p-6 rounded-2xl border border-dashed text-sm
+        ${isDark ? "border-slate-700 text-slate-500 bg-slate-900/40" : "border-slate-200 text-slate-400 bg-slate-50"}`}>
+        <AlertTriangle size={16} className="opacity-60" />
+        Image could not be loaded.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <motion.figure
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        className="my-8"
+      >
+        {/* Image container */}
+        <div
+          className={`group relative rounded-2xl overflow-hidden border cursor-zoom-in
+            ${isDark
+              ? "border-slate-800/80 bg-slate-900/40 shadow-xl shadow-black/30"
+              : "border-slate-200/80 bg-slate-50 shadow-lg shadow-slate-200/60"
+            }`}
+          onClick={() => setLightboxOpen(true)}
+        >
+          <img
+  src={data.url}
+  alt={data.alt || data.caption || "Topic image"}
+  onError={() => setImgError(true)}
+  className="w-full max-h-[560px] h-auto object-contain mx-auto transition-transform duration-500 group-hover:scale-[1.01]"
+/>
+
+          {/* Hover zoom hint */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm shadow-lg
+              ${isDark ? "bg-black/60 text-white" : "bg-white/80 text-slate-700"}`}>
+              <ZoomIn size={13} />
+              Click to enlarge
+            </div>
+          </div>
+        </div>
+
+        {/* Caption */}
+        {data.caption && (
+          <figcaption className={`mt-3 text-center text-sm leading-relaxed px-4
+            ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            {data.caption}
+          </figcaption>
+        )}
+      </motion.figure>
+
+      {/* ── Lightbox ── */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative max-w-[92vw] max-h-[90vh] flex flex-col items-center"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setLightboxOpen(false)}
+                className="absolute -top-4 -right-4 z-10 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all"
+              >
+                <XIcon size={16} />
+              </button>
+
+              <img
+                src={data.url}
+                alt={data.alt || data.caption || "Topic image"}
+                className="rounded-2xl shadow-2xl object-contain max-w-full max-h-[82vh]"
+                style={{ boxShadow: "0 25px 80px rgba(0,0,0,0.7)" }}
+              />
+
+              {data.caption && (
+                <p className="mt-4 text-center text-sm text-white/60 max-w-lg leading-relaxed">
+                  {data.caption}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RENDER BLOCK SWITCH  — now includes "image"
+───────────────────────────────────────────────────────────── */
 function RenderBlock({ block, theme, headingId }) {
   if (!block?.type || !block?.data) return null;
   switch (block.type) {
-    case "text":    return <TextBlock    data={block.data} theme={theme} />;
-    case "code":    return <CodeBlock    data={block.data} />;
-    case "heading": return <HeadingBlock data={block.data} theme={theme} id={headingId} />;
-    case "note":    return <NoteBlock    data={block.data} theme={theme} />;
+    case "text":    return <TextBlock          data={block.data} theme={theme} />;
+    case "code":    return <CodeBlock          data={block.data} />;
+    case "heading": return <HeadingBlock       data={block.data} theme={theme} id={headingId} />;
+    case "note":    return <NoteBlock          data={block.data} theme={theme} />;
+    case "image":   return <ImageBlockRenderer data={block.data} theme={theme} />;   // ← FIXED
     default:        return null;
   }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   VIDEO SECTION  (shown below the article)
+   VIDEO SECTION
 ───────────────────────────────────────────────────────────── */
 function VideoSection({ url, theme }) {
   const isDark = theme === "dark";
@@ -268,7 +384,6 @@ function VideoSection({ url, theme }) {
           ${isDark ? "border-slate-800/60 bg-slate-900/60" : "border-slate-200/80 bg-white/80"}`}
         style={{ backdropFilter: "blur(8px)" }}
       >
-        {/* Header */}
         <div className={`flex items-center gap-3 px-6 py-4 border-b
           ${isDark ? "border-slate-800/60" : "border-slate-100"}`}>
           <div className={`p-2 rounded-xl ${isDark ? "bg-violet-500/15" : "bg-violet-50"}`}>
@@ -661,14 +776,10 @@ export default function TopicDetail() {
       </div>
 
       {/* ── Main layout ───────────────────────────────────────── */}
-      {/*
-        Layout: [article — flex-1 grows fully] [sidebar — fixed w-72, stuck to right edge]
-        max-w-screen-2xl ensures it uses the full viewport width with only minimal padding.
-      */}
       <div className="max-w-screen-2xl mx-auto px-6 sm:px-10 py-10">
         <div className="flex gap-8 items-start">
 
-          {/* ── Article — takes all remaining width ───────────── */}
+          {/* ── Article ───────────────────────────────────────── */}
           <main className="flex-1 min-w-0">
             <motion.article
               initial={{ opacity: 0 }}
@@ -703,18 +814,15 @@ export default function TopicDetail() {
               }
             </motion.article>
 
-            {/* Video below the article */}
             <VideoSection url={topic.video_url} theme={theme} />
-
             <PrevNextNav siblings={siblings} currentSlug={slug} theme={theme} navigate={navigate} />
           </main>
 
-          {/* ── Right sidebar — pinned to the far right ────────── */}
+          {/* ── Right sidebar ─────────────────────────────────── */}
           <aside className="hidden lg:block w-72 flex-shrink-0">
             <div className="sticky top-24 space-y-4 max-h-[calc(100vh-7rem)] overflow-y-auto
               [scrollbar-width:thin] [scrollbar-color:theme(colors.slate.700)_transparent]">
 
-              {/* Course progress */}
               {courseProgress && (
                 <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-900/80 border-slate-800/80" : "bg-white/90 border-slate-200/80"} backdrop-blur-sm`}>
                   <div className="flex items-center justify-between mb-3">
