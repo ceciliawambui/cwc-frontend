@@ -36,7 +36,7 @@ const TopicItem = ({ topic, theme, index }) => {
       transition={{ delay: index * 0.05 }}
     >
       <Link
-        to={`/topics/by-slug/${topic.slug}`}
+        to={`/topics/${topic.slug}`}
         className={`block px-4 py-3 rounded-lg transition-all duration-200
           ${theme === "dark"
             ? "hover:bg-slate-800/50 border border-slate-800 hover:border-slate-700"

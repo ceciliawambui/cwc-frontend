@@ -74,8 +74,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/courses/:slug" element={<CourseDetail />} />
-          {/* <Route path="/topics/:slug" element={<TopicDetail />} /> */}
-          <Route path="/topics/by-slug/:slug" element={<TopicDetail />} />
+          <Route path="/topics/:slug" element={<TopicDetail />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/categories/:slug" element={<CategoryDetail />} />

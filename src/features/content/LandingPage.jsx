@@ -87,7 +87,7 @@ const TypeBadge = ({ type, size = "sm" }) => {
     video: { bg: "bg-rose-50 dark:bg-rose-900/20", text: "text-rose-700 dark:text-rose-300", icon: Layers },
     guide: { bg: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-700 dark:text-emerald-300", icon: Zap },
     reference: { bg: "bg-violet-50 dark:bg-violet-900/20", text: "text-violet-700 dark:text-violet-300", icon: Star },
-    topic: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-300", icon: BookOpen },
+    topic: { bg: "bg-[#4b9966]/10 dark:bg-[#4b9966]/20", text: "text-[#4b9966] dark:text-[#4b9966]", icon: BookOpen },
   };
 
   const config = styles[type] || styles.article;
@@ -189,7 +189,7 @@ const SearchSection = ({ theme, allTopics }) => {
                 {filteredTopics.map((topic, idx) => (
                   <Link
                     key={topic.id}
-                    to={`/topics/by-slug/${topic.slug}`}
+                    to={`/topics/${topic.slug}`}
                     onClick={() => handleClear()}
                     className={`block px-5 py-4 border-b transition-colors
                       ${theme === "dark"
@@ -612,7 +612,7 @@ export default function LandingPage() {
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
                     <Link
-                      to={`/topics/by-slug/${topic.slug}`}
+                      to={`/topics/${topic.slug}`}
                       className={`text-sm font-semibold
                         ${theme === "dark" ? "text-slate-300" : "text-slate-700"}
                         hover:underline`}

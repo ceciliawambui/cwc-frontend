@@ -140,7 +140,7 @@ const RecentTopicsSidebar = ({ recentTopics, theme }) => {
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Link
-              to={`/topics/by-slug/${topic.slug}`}
+              to={`/topics/${topic.slug}`}
               className={`block p-3 rounded-xl border transition-all
                 ${theme === "dark"
                   ? "border-slate-800 hover:bg-slate-800/50 hover:border-slate-700"
@@ -415,7 +415,7 @@ export default function CourseDetail() {
   // Stable navigation callback
   const handleTopicClick = useCallback(
     (topicSlug) => {
-      navigate(`/topics/by-slug/${topicSlug}`);
+      navigate(`/topics/${topicSlug}`);
     },
     [navigate]
   );

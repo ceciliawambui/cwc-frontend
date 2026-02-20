@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
@@ -8,6 +8,7 @@ import client from "../features/auth/api";
 export default function BlockNoteEditor({ initialContent, onChange }) {
   // Store initial content state
   const [jsonBlocks] = useState(initialContent || undefined);
+  const editorRef = useRef(null);
 
   // Memoized Upload Function
   const uploadFile = useCallback(async (file) => {
@@ -30,6 +31,52 @@ export default function BlockNoteEditor({ initialContent, onChange }) {
     uploadFile: uploadFile,
   });
 
+  // CRITICAL FIX: Intercept paste events to preserve all HTML content
+  useEffect(() => {
+    if (!editor || !editorRef.current) return;
+
+    const editorElement = editorRef.current.querySelector('[contenteditable="true"]');
+    if (!editorElement) return;
+
+    const handlePaste = (e) => {
+      // Check if we're currently in a code block
+      const selection = window.getSelection();
+      const currentElement = selection?.anchorNode?.parentElement;
+      
+      // Look for code block indicators
+      const isInCodeBlock = currentElement?.closest('[data-content-type="codeBlock"]') ||
+                           currentElement?.closest('code') ||
+                           currentElement?.closest('pre');
+
+      if (isInCodeBlock) {
+        // For code blocks, preserve the raw pasted text
+        e.preventDefault();
+        
+        const pastedText = e.clipboardData.getData('text/plain');
+        
+        // Insert the text at cursor position
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const textNode = document.createTextNode(pastedText);
+        range.insertNode(textNode);
+        
+        // Move cursor to end of inserted text
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger editor update
+        editor._tiptapEditor?.commands?.focus();
+      }
+    };
+
+    editorElement.addEventListener('paste', handlePaste);
+    return () => {
+      editorElement.removeEventListener('paste', handlePaste);
+    };
+  }, [editor]);
+
   // Handle editor changes
   useEffect(() => {
     if (!editor) return;
@@ -38,10 +85,12 @@ export default function BlockNoteEditor({ initialContent, onChange }) {
       try {
         const json = editor.document;
         
-        // CRITICAL FIX: Process code blocks to preserve raw text content
-        const processedBlocks = json.map(block => {
+        // Build HTML with special handling for code blocks
+        let html = '';
+        
+        for (const block of json) {
           if (block.type === "codeBlock") {
-            // Extract the actual text content from the block
+            // Extract raw text content directly from the block
             let codeText = '';
             
             if (block.content && Array.isArray(block.content)) {
@@ -53,39 +102,25 @@ export default function BlockNoteEditor({ initialContent, onChange }) {
               }).join('');
             }
             
-            // Return a processed block with escaped content
-            return {
-              ...block,
-              _rawContent: codeText
-            };
-          }
-          return block;
-        });
-        
-        // Build HTML manually for code blocks to ensure proper escaping
-        let html = '';
-        
-        for (const block of processedBlocks) {
-          if (block.type === "codeBlock" && block._rawContent !== undefined) {
+            // Get language
             const language = block.props?.language || "plaintext";
-            const rawCode = block._rawContent;
             
-            // Escape HTML entities for storage
-            const escapedCode = rawCode
+            // Store in base64 for absolute reliability
+            const base64Code = btoa(unescape(encodeURIComponent(codeText)));
+            
+            // Escape HTML entities
+            const escapedCode = codeText
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;')
               .replace(/'/g, '&#039;');
             
-            // Use base64 encoding as backup to preserve exact content
-            const base64Code = btoa(unescape(encodeURIComponent(rawCode)));
-            
-            html += `<pre data-language="${language}" data-code-content="${escapedCode}" data-code-base64="${base64Code}"><code class="language-${language}">${escapedCode}</code></pre>\n`;
+            // Build HTML with data attributes
+            html += `<pre data-language="${language}" data-code-base64="${base64Code}" data-code-content="${escapedCode}"><code class="language-${language}">${escapedCode}</code></pre>\n`;
           } else {
             // For non-code blocks, use standard conversion
-            const tempEditor = editor;
-            const blockHtml = await tempEditor.blocksToHTMLLossy([block]);
+            const blockHtml = await editor.blocksToHTMLLossy([block]);
             html += blockHtml;
           }
         }
@@ -105,7 +140,10 @@ export default function BlockNoteEditor({ initialContent, onChange }) {
   }
 
   return (
-    <div className="blocknote-container h-full overflow-y-auto bg-white dark:bg-gray-900 rounded-xl relative z-0">
+    <div 
+      ref={editorRef}
+      className="blocknote-container h-full overflow-y-auto bg-white dark:bg-gray-900 rounded-xl relative z-0"
+    >
       <BlockNoteView 
         editor={editor} 
         theme="light" 
@@ -178,29 +216,25 @@ export default function BlockNoteEditor({ initialContent, onChange }) {
           color: #9ca3af; 
         }
         
-        /* Code block styling in editor - PREVENT HTML RENDERING */
+        /* Code block styling - PRESERVE ALL TEXT CONTENT */
         .bn-editor pre {
           background-color: #1e1e1e;
           border-radius: 8px;
           padding: 1rem;
           overflow-x: auto;
+          white-space: pre-wrap !important;
         }
         
         .bn-editor pre code {
           font-family: 'Courier New', monospace;
           font-size: 0.9em;
-          white-space: pre;
+          white-space: pre-wrap !important;
           display: block;
         }
         
-        /* Ensure code blocks show text content, not rendered HTML */
-        .bn-editor pre * {
-          display: inline;
-          margin: 0;
-          padding: 0;
-          font-size: inherit;
-          font-weight: inherit;
-          line-height: inherit;
+        /* Force text-only rendering */
+        .bn-editor [data-content-type="codeBlock"] * {
+          white-space: pre-wrap !important;
         }
         
         /* Blockquote styling in editor */

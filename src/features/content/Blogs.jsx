@@ -359,7 +359,7 @@ export default function Blogs() {
             {/* Title */}
             <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${textPrimary}`}>
               Latest from{" "}
-              <span className={theme === "dark" ? "text-slate-400" : "text-slate-500"}>
+              <span className="text-[#4b9966]">
                 DevNook
               </span>
             </h1>

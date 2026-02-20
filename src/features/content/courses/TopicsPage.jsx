@@ -663,7 +663,7 @@ export default function TopicsPage() {
   }, [searchQuery, filters]);
 
   const handleTopicClick = useCallback((slug) => {
-    navigate(`/topics/by-slug/${slug}`);
+    navigate(`/topics/${slug}`);
   }, [navigate]);
 
   const handlePageChange = (page) => {
@@ -705,7 +705,7 @@ export default function TopicsPage() {
             {/* Title */}
             <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${textPrimary}`}>
               Explore{" "}
-              <span className={theme === "dark" ? "text-slate-400" : "text-slate-500"}>
+              <span className="text-[#4b9966]">
                 All Topics
               </span>
             </h1>

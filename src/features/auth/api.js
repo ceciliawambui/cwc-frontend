@@ -240,7 +240,7 @@ export async function getTopics(courseId = null) {
  * @returns {Promise} Topic details
  */
 export async function getTopicBySlug(slug) {
-  const response = await client.get(`/topics/by-slug/${slug}/`);
+  const response = await client.get(`/topics/${slug}/`);
   return response.data;
 }
 
